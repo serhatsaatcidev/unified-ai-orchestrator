@@ -248,7 +248,7 @@ Daima samimi, yardımcı ve profesyonel bir dil kullan.`
     const result = await chat.sendMessage(userMessage);
     const response = result.response;
     
-    const functionCalls = response.functionCalls;
+    const functionCalls = response.functionCalls();
     
     if (functionCalls && functionCalls.length > 0) {
       const call = functionCalls[0];
