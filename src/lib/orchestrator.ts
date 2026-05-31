@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, FunctionDeclaration, Type } from "@google/generative-ai";
+import { GoogleGenerativeAI, FunctionDeclaration, SchemaType } from "@google/generative-ai";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
@@ -7,11 +7,11 @@ const marketResearchTool: FunctionDeclaration = {
   name: "performMarketResearch",
   description: "Searches the web or database to analyze real estate prices, market trends, or property listings in a specific location.",
   parameters: {
-    type: Type.OBJECT,
+    type: SchemaType.OBJECT,
     properties: {
-      location: { type: Type.STRING, description: "The city or district to research (e.g., 'Kadıköy', 'Bodrum')." },
-      query: { type: Type.STRING, description: "Specific research query (e.g., 'acilde satılık 3+1 daire fiyatları')." },
-      propertyType: { type: Type.STRING, description: "Type of property: 'residential', 'commercial', 'land'." }
+      location: { type: SchemaType.STRING, description: "The city or district to research (e.g., 'Kadıköy', 'Bodrum')." },
+      query: { type: SchemaType.STRING, description: "Specific research query (e.g., 'acilde satılık 3+1 daire fiyatları')." },
+      propertyType: { type: SchemaType.STRING, description: "Type of property: 'residential', 'commercial', 'land'." }
     },
     required: ["location", "query"]
   }
@@ -21,11 +21,11 @@ const socialMediaTool: FunctionDeclaration = {
   name: "generateSocialMediaContent",
   description: "Generates structured social media posts (LinkedIn or Instagram) with appropriate formatting, emojis, and hashtags.",
   parameters: {
-    type: Type.OBJECT,
+    type: SchemaType.OBJECT,
     properties: {
-      platform: { type: Type.STRING, description: "The platform: 'linkedin' or 'instagram'." },
-      topic: { type: Type.STRING, description: "The core topic or theme of the post (e.g., 'Emlak yatırımı yaparken dikkat edilmesi gerekenler')." },
-      tone: { type: Type.STRING, description: "Tone of the post: 'professional', 'casual', 'energetic', 'educational'." }
+      platform: { type: SchemaType.STRING, description: "The platform: 'linkedin' or 'instagram'." },
+      topic: { type: SchemaType.STRING, description: "The core topic or theme of the post (e.g., 'Emlak yatırımı yaparken dikkat edilmesi gerekenler')." },
+      tone: { type: SchemaType.STRING, description: "Tone of the post: 'professional', 'casual', 'energetic', 'educational'." }
     },
     required: ["platform", "topic"]
   }
@@ -35,13 +35,13 @@ const emailCalendarTool: FunctionDeclaration = {
   name: "manageEmailsAndCalendar",
   description: "Manages business emails and calendar invites. Can check incoming emails, list appointments, draft replies, or schedule meetings.",
   parameters: {
-    type: Type.OBJECT,
+    type: SchemaType.OBJECT,
     properties: {
       action: { 
-        type: Type.STRING, 
+        type: SchemaType.STRING, 
         description: "The action to perform: 'list_emails' (recent emails), 'list_calendar' (upcoming events), 'send_email' (draft/send), 'schedule_event' (calendar add)." 
       },
-      details: { type: Type.STRING, description: "Context details (e.g., recipient email, meeting title, date/time)." }
+      details: { type: SchemaType.STRING, description: "Context details (e.g., recipient email, meeting title, date/time)." }
     },
     required: ["action"]
   }
@@ -51,11 +51,11 @@ const presentationTool: FunctionDeclaration = {
   name: "createPresentationOutline",
   description: "Creates a structured slide-by-slide outline (compatible with Marp Markdown) for a business presentation, client pitch, or report.",
   parameters: {
-    type: Type.OBJECT,
+    type: SchemaType.OBJECT,
     properties: {
-      topic: { type: Type.STRING, description: "The topic of the presentation." },
-      audience: { type: Type.STRING, description: "Target audience (e.g., 'Emlak Yatırımcıları', 'Potansiyel Alıcılar')." },
-      slideCount: { type: Type.INTEGER, description: "Desired number of slides." }
+      topic: { type: SchemaType.STRING, description: "The topic of the presentation." },
+      audience: { type: SchemaType.STRING, description: "Target audience (e.g., 'Emlak Yatırımcıları', 'Potansiyel Alıcılar')." },
+      slideCount: { type: SchemaType.INTEGER, description: "Desired number of slides." }
     },
     required: ["topic", "audience"]
   }
@@ -65,11 +65,11 @@ const webUpdateTool: FunctionDeclaration = {
   name: "updateWebsiteContent",
   description: "Drafts and schedules content updates, blog posts, or property listings for the user's web applications or WordPress/Vercel sites.",
   parameters: {
-    type: Type.OBJECT,
+    type: SchemaType.OBJECT,
     properties: {
-      page: { type: Type.STRING, description: "Target page or section (e.g., 'blog', 'listings', 'about')." },
-      title: { type: Type.STRING, description: "Title of the content or listing." },
-      contentBody: { type: Type.STRING, description: "The body or HTML content to upload." }
+      page: { type: SchemaType.STRING, description: "Target page or section (e.g., 'blog', 'listings', 'about')." },
+      title: { type: SchemaType.STRING, description: "Title of the content or listing." },
+      contentBody: { type: SchemaType.STRING, description: "The body or HTML content to upload." }
     },
     required: ["page", "title", "contentBody"]
   }
