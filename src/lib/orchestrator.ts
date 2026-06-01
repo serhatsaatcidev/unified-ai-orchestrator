@@ -75,27 +75,26 @@ const webUpdateTool: FunctionDeclaration = {
   }
 };
 
-// Tool implementations (Mocking the dynamic results for our PoC with London/UK Context)
+// Tool implementations (Mocking the dynamic results for our PoC with Brick & Fortune London Zone 1 Context)
 const toolHandlers: Record<string, (args: any) => Promise<any>> = {
   performMarketResearch: async ({ location, query, propertyType }) => {
-    console.log(`[Tool Call] performMarketResearch in London/${location}: ${query}`);
+    console.log(`[Tool Call] performMarketResearch in London Zone 1 / ${location}: ${query}`);
     
-    // Simulate UK web searching / scraping and returning rich London market data
-    const loc = location || "London";
-    const isPrime = loc.toLowerCase().includes("kensington") || loc.toLowerCase().includes("chelsea") || loc.toLowerCase().includes("richmond");
+    // Simulate UK Zone 1 Prime Off-Market searching for Brick & Fortune
+    const loc = location || "Mayfair/Knightsbridge";
     
     return {
       status: "success",
       location: loc,
-      summary: `🇬🇧 *London - ${loc}* bölgesi için yapılan güncel gayrimenkul analiz sonuçları:`,
-      averagePrice: isPrime ? "£850,000 - £1,500,000" : "£450,000 - £750,000",
+      summary: `🇬🇧 *Brick & Fortune — London Zone 1 (${loc})* Off-Market Değerleme ve Analiz Raporu:`,
+      averagePrice: "£2,500,000 - £15,000,000+ (Prime Zone 1 Freehold)",
       listingsFound: [
-        { title: "Stunning 2 Bed Apartment with River Views", price: "£675,000", size: "82 m² (880 sq ft)", source: "rightmove.co.uk" },
-        { title: "Modern 1 Bed Flat near Tube Station", price: "£425,000", size: "55 m² (590 sq ft)", source: "zoopla.co.uk" },
-        { title: "Beautiful 3 Bed Terrace House in Commuter Zone", price: "£895,000", size: "115 m² (1,230 sq ft)", source: "rightmove.co.uk" }
+        { title: "Kensington Court — Stunning Off-Market Freehold Townhouse", price: "£6,450,000", size: "320 m² (3,440 sq ft)", source: "Brick & Fortune Off-Market Private Network" },
+        { title: "Belgravia Mews — Fully Refurbished Freehold House with Garage", price: "£4,850,000", size: "210 m² (2,260 sq ft)", source: "Pre-Market Private Client Relations" },
+        { title: "Knightsbridge — Exclusive Penthouse Apartment near Harrods (Leasehold 990+ Yrs)", price: "£8,900,000", size: "280 m² (3,010 sq ft)", source: "Boutique RICS Valued Portfolio" }
       ],
-      marketTrend: "Londra genelinde Zone 2 ve Zone 3 banliyö hatlarında kiralama talebi çok güçlü seyrediyor. Ortalama kira getirileri (yield) %4.8 - %5.9 arasında.",
-      insights: "İngiltere'deki güncel mortgage (konut kredisi) faiz oranları dengelenirken, nakit alıcılar ve kurumsal yatırımcılar Rightmove/Zoopla üzerinde aktif kalmaya devam ediyor. Alırken pazarlık payı Zone 3 dışı bölgelerde %3-5 seviyesinde."
+      marketTrend: "Londra Zone 1 prime gayrimenkul pazarı, küresel dalgalanmalara karşı en dirençli 'güvenli liman' olmaya devam ediyor. Türk HNWI (High Net Worth Individual) yatırımcıların enflasyon korumalı İngiliz Sterlini ve özellikle 'Freehold' (toprak mülkiyetli) varlıklara olan talebi son derece yüksek.",
+      insights: "Knightsbridge ve Mayfair bölgesinde off-market (kamuya kapalı) ilanlarda alıcı tarafını (Buying Agent) temsil etmenin avantajıyla pazarlık gücümüz ortalama %6-10 seviyesindedir. Satıcı emlakçısının aksine yalnızca alıcı çıkarlarını ve gizliliğini koruyoruz."
     };
   },
 
@@ -103,12 +102,12 @@ const toolHandlers: Record<string, (args: any) => Promise<any>> = {
     console.log(`[Tool Call] generateSocialMediaContent for ${platform} on topic: ${topic}`);
     
     const hashtags = platform === "linkedin" 
-      ? "\n\n#LondonProperty #UKRealEstate #PropertyInvestment #Rightmove #Zoopla #UKFinance"
-      : "\n\n#london #londonrealestate #ukproperty #flatforrent #luxuryhomes #investinlondon";
+      ? "\n\n#BrickAndFortune #LondonZone1 #BuyingAgent #PrimeCentralLondon #OffMarketLondon #FreeholdProperty #UKInvestment"
+      : "\n\n#londra #londraemlak #londradavevalmak #gayrimenkulyatırımı #kensington #mayfair #buyingagent #luxuryhomes";
 
     const content = platform === "linkedin"
-      ? `📈 **London Property Market: Why Commuter Zones Are Outperforming Prime Central London**\n\nHaving analyzed the UK real estate dynamics for the past few quarters, one trend stands out clearly: Zone 3 and commuter belt properties are outperforming Prime Central London in terms of rental yields and capital growth.\n\nHere are 3 reasons why buy-to-let investors are shifting their capital outside Zone 1:\n\n1️⃣ **The Hybrid Work Effect:** Professionals are willing to travel 30-40 mins if they get a home office and private green space for their money.\n2️⃣ **Rental Yield Resilience:** Outer zones offer 5.5% - 6.2% gross yields, compared to a mere 3% in Kensington or Chelsea.\n3️⃣ **Regeneration Projects:** Areas like Wembley, Croydon, and Stratford continue to benefit from multi-billion pound infrastructure injections.\n\nAre you looking to expand your portfolio in London this year? What zones are on your radar? Let's discuss in the comments! 👇${hashtags}`
-      : `🏡 **Thinking of buying a flat in London? Avoid these 3 mistakes!**\n\nNavigating the UK property market can be tricky. Here is what to watch out for:\n\n❌ **1. Overlooking Service Charges & Ground Rent:** In leasehold flats, these can eat up your yields.\n❌ **2. Ignoring the Council Tax band:** Make sure you calculate the exact monthly holding costs.\n❌ **3. Commute distance vs. Tube line reliability:** Always check the Elizabeth Line or Overground connections!\n\n💡 Drop me a DM for direct listings and custom portfolio analysis in London! ✨${hashtags}`;
+      ? `📈 **Londra Zone 1'de Gayrimenkul Yatırımı: Neden 'Leasehold' Değil, 'Freehold' Tercih Etmelisiniz?**\n\nLondra'da ev satın alırken karşınıza çıkacak en kritik kavramlardan biri mülkiyet tipidir. Çoğu emlakçı size 'Leasehold' (uzun vadeli kiralama) satmaya çalışırken, biz Brick & Fortune olarak yatırımcılarımızı **'Freehold' (gerçek toprak mülkiyetli)** yapılara yönlendiriyoruz.\n\nNeden mi?\n\n1️⃣ **Gerçek Sahiplik:** Freehold mülklerde toprağın ve binanın tamamı yasal olarak size aittir. Süre sınırı veya kira ödeme (ground rent) yükümlülüğünüz yoktur.\n2️⃣ **Maddi Değer Koruma:** Leasehold mülklerde süre azaldıkça mülkün değeri düşerken, Freehold mülkler nesiller boyu değerini katlayarak korur.\n3️⃣ **Karar Özgürlüğü:** Yenileme, tadilat veya yönetim kararlarında hiçbir third-party kuruma bağlı kalmazsınız.\n\nTürk yatırımcılarımıza Londra'nın en seçkin Zone 1 bölgelerinde (Mayfair, Knightsbridge, Chelsea) kamuya açık olmayan (off-market) 'Freehold' fırsatları sunuyoruz. Yalnızca alıcıyı temsil ettiğimiz Buying Agent modelimizi keşfetmek için iletişime geçebilirsiniz. 🤝${hashtags}`
+      : `🏡 **Londra Zone 1'de Ev Alırken 'Emlakçı' Tuzağına Düşmeyin!**\n\nİngiltere'de standart emlakçılar (Estate Agent) kanunen yalnızca satıcıyı temsil eder ve onun çıkarına çalışır. \n\nSizin haklarınızı kim koruyor? \n\n✨ **Brick & Fortune** olarak biz **Buying Agent (Alıcı Temsilcisi)** rolündeyiz: \n✔️ Sadece sizin (alıcı) çıkarlarınızı koruruz.\n✔️ Kamuya açık olmayan (off-market) en iyi mülkleri buluruz.\n✔️ Satıcıdan komisyon almaz, tamamen sizin yanınızda yer alırız.\n\nLondra'da güvenli ve gizlilik odaklı yatırımın adresi: **investinlondon.com.tr** 🇬🇧${hashtags}`;
 
     return {
       status: "success",
@@ -125,22 +124,22 @@ const toolHandlers: Record<string, (args: any) => Promise<any>> = {
       return {
         status: "success",
         emails: [
-          { from: "James Smith (UK Investor)", subject: "London buy-to-let portfolio proposal", date: "Today, 10:30", summary: "Richmond ve Greenwich bölgelerindeki portföy teklifini revize etmek istiyor, sizinle yüz yüze görüşmek üzere randevu talep ediyor." },
-          { from: "Sarah Jenkins (Dexters Estate Agents)", subject: "New property listings in Richmond", date: "Yesterday, 17:15", summary: "Richmond nehir kenarında acil satılık 2 dairenin Rightmove linklerini ve tapu durum bilgilerini paylaştı." }
+          { from: "Yatırımcı (Yeniköy / İstanbul)", subject: "Knightsbridge off-market townhouse bütçe detayları", date: "Bugün, 10:30", summary: "Knightsbridge bölgesindeki £5M - £8M bütçeli off-market freehold townhouse seçeneklerini incelemek ve detaylı RICS raporlarını istemek üzere mail attı." },
+          { from: "Sarah Jenkins (Savills Prime London)", subject: "Exclusive Off-Market Residential Building — Belgravia", date: "Dün, 17:15", summary: "Belgravia bölgesinde kamuya açık olmayan, RICS değerlemesi yapılmış komple bir bina fırsatının detaylarını sadece Brick & Fortune ağına özel olarak iletti." }
         ]
       };
     } else if (action === "list_calendar") {
       return {
         status: "success",
         events: [
-          { title: "Meeting with James Smith (Investor)", time: "Tomorrow, 14:00 - 15:00", location: "Richmond Riverside Cafe" },
-          { title: "Weekly Portfolio Review with UK Team", time: "Wednesday, 10:00 - 11:00", location: "Zoom / London Office" }
+          { title: "Knightsbridge Off-Market Görüşmesi (Türk Yatırımcı)", time: "Yarın, 14:00 - 15:00", location: "Rutland Gate Office, Knightsbridge" },
+          { title: "Savills Prime Acquisition Team Zoom Call", time: "Çarşamba, 11:00 - 12:00", location: "Zoom (London / Istanbul)" }
         ]
       };
     } else if (action === "schedule_event") {
       return {
         status: "success",
-        message: `Takviminize (Londra GMT/BST Saat Dilimine göre) başarıyla eklendi: "${details}".`
+        message: `Takviminize (Londra Saat Dilimine göre Knightsbridge ofis ajandasına) başarıyla eklendi: "${details}".`
       };
     }
     
@@ -157,42 +156,42 @@ marp: true
 theme: gaia
 _class: lead
 paginate: true
-backgroundColor: #121214
+backgroundColor: #0c0d12
 color: #f3f4f6
 ---
 
 # ${topic}
-### London Real Estate Investment Opportunities
-Prepared by: Your AI Personal Orchestrator
-Target Audience: ${audience}
+### Brick & Fortune — London Zone 1 Gayrimenkul Fırsatları
+Hazırlayan: AI Kişisel Asistanınız
+Hedef Kitle: ${audience} (Türk HNWI Yatırımcılar)
 
 ---
 
-## 1. Executive Summary & UK Macro Outlook
-- Current UK inflation, interest rates, and property trends.
-- London's status as a global financial and real estate hub.
-- Why buy-to-let remains resilient despite regulatory shifts.
+## 1. Brick & Fortune Yönetici Özeti
+- Knightsbridge merkezli, yalnızca Londra Zone 1 prime gayrimenkul odağı.
+- Satıcıyı değil, yalnızca ALICIYI temsil eden **Buying Agent** iş modeli.
+- Freehold (gerçek mülkiyet) ve off-market (kamuya kapalı) portföy avantajı.
 
 ---
 
-## 2. Top Performing London Boroughs (Zone 2-4)
-- Richmond upon Thames vs. Greenwich rental yields.
-- Capital appreciation trends in Wembley and Hackney.
-- Commuter belt connectivity (Elizabeth Line impacts).
+## 2. Neden Londra Zone 1 Gayrimenkulü?
+- Enflasyona karşı korumalı Sterlin (GBP) bazlı sermaye koruması.
+- Mayfair, Knightsbridge, Chelsea ve Kensington gibi dünyanın en prestijli lokasyonları.
+- Tarihsel olarak krizlere karşı en yüksek direnci gösteren 'güvenli liman'.
 
 ---
 
-## 3. Financial Analysis & Yield Modeling
-- Average purchase price vs. rental income modeling in GBP.
-- Impact of Service Charges, Ground Rent, and Stamp Duty Land Tax (SDLT).
-- Net yields (target 5.5%+) comparison sheet.
+## 3. Yatırım Kriterleri: Leasehold vs. Freehold
+- Leasehold'un riskleri ve ek maliyetleri (Ground Rent, Service Charge).
+- Neden yatırımcılarımızı toprağıyla gerçek mülkiyet sunan **Freehold** yapılara yönlendiriyoruz?
+- Bölgesel net getiri (yield) ve amortisman analizleri.
 
 ---
 
-## 4. Investment Execution Roadmap
-- Identifying off-market deals through local agent relationships.
-- Legal conveyancing steps in England & Wales.
-- Next 30 days action plan. Thank you! Q&A.
+## 4. Brick & Fortune Satın Alma Süreci ve Yol Haritası
+- Müşteri profil analizi ve bütçelendirme (Knightsbridge ofisimizde veya İstanbul'da).
+- RICS standartlarında bağımsız değerleme ve conveyancing (hukuki) süreç yönetimi.
+- Gizlilik taahhüdü (NDA) çerçevesinde off-market mülklere özel erişim.
 `;
 
     return {
@@ -211,8 +210,8 @@ Target Audience: ${audience}
       status: "success",
       page,
       title,
-      deploymentUrl: "https://unified-ai-orchestrator.vercel.app/blog/london-market-update-2026",
-      message: `İçerik başarıyla "${page}" sayfasına taslak olarak eklendi. Vercel webhook tetiklendi ve site yeniden derleniyor.`
+      deploymentUrl: "https://www.investinlondon.com.tr/blog/londra-zone-1-freehold-yatirimlari",
+      message: `İçerik başarıyla Brick & Fortune web sitenizin "${page}" sayfasına taslak olarak eklendi. Vercel webhook tetiklendi ve investinlondon.com.tr derleniyor.`
     };
   }
 };
@@ -240,11 +239,12 @@ export async function runOrchestrator(userId: number, userMessage: string): Prom
           webUpdateTool
         ]
       }],
-      systemInstruction: `Sen kullanıcının tüm işlerini koordine eden, son derece yetenekli, kibar, çözüm odaklı bir Kişisel Yapay Zeka Asistanısın (Orkestratör). 
+      systemInstruction: `Sen Brick & Fortune firmasının kurucusu Serhat Saatcı Bey'in tüm işlerini koordine eden, Londra Zone 1 prime gayrimenkul ve Knightsbridge emlak piyasasına, Buying Agent (Alıcı Temsilcisi) iş modeline, off-market freehold mülklere tamamen hakim, son derece profesyonel, kibar ve çözüm odaklı Kişisel Yapay Zeka Asistanısın (Brick & Fortune AI Orchestrator).
 Kullanıcı seninle Telegram üzerinden konuşuyor.
-Sana tanımlanmış özel fonksiyonları (araçları) akıllıca kullanarak kullanıcının taleplerini yerine getirmelisin. 
-Eğer bir aracı çağırırsan, o aracın çıktısını alıp kullanıcıya Türkçe dilinde, profesyonel, anlaşılır ve emojilerle zenginleştirilmiş güzel bir özet sunmalısın.
-Daima samimi, yardımcı ve profesyonel bir dil kullan.`
+Sana tanımlanmış özel fonksiyonları (araçları) akıllıca kullanarak Serhat Bey'in taleplerini yerine getirmelisin.
+Yatırımcılar genellikle Türk HNWI (yüksek net değerli) profilleridir. Konuşmalarında ve raporlarında daima bu elit, kurumsal ve güven veren 'Brick & Fortune' tonunu yansıtmalısın.
+Eğer bir aracı çağırırsan, o aracın çıktısını alıp Serhat Bey'e Türkçe dilinde, çok profesyonel, anlaşılır ve emojilerle zenginleştirilmiş güzel bir özet sunmalısın.
+Daima samimi, son derece saygılı ve profesyonel bir iş dili kullan.`
     });
 
     const chat = model.startChat();
