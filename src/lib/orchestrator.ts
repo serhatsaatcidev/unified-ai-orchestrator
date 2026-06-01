@@ -456,6 +456,24 @@ ${contentBody}
 };
 
 /**
+ * Helper to execute a quick content generation using Gemini 2.5 Flash as a resilient fallback.
+ */
+async function runGeminiFallback(prompt: string, systemInstruction: string): Promise<string> {
+  try {
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY!);
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      systemInstruction
+    });
+    const result = await model.generateContent(prompt);
+    return result.response.text();
+  } catch (error: any) {
+    console.error("Gemini fallback failed:", error);
+    return "Maalesef yedek yapay zeka motoru da şu anda yanıt veremedi.";
+  }
+}
+
+/**
  * Main orchestrator handler that receives messages from Telegram,
  * runs the Gemini model with tool capability, resolves tool execution,
  * and compiles the final user response.
@@ -478,7 +496,16 @@ export async function runOrchestrator(userId: number, userMessage: string): Prom
 Konuşmalarında ve raporlarında daima bu elit, kurumsal ve güven veren 'Brick & Fortune' tonunu yansıtmalısın.
 Daima samimi, son derece saygılı ve profesyonel bir iş dili kullan.`;
     
-    return await callClaude(cleanedMessage, systemInstruction);
+    try {
+      return await callClaude(cleanedMessage, systemInstruction);
+    } catch (error: any) {
+      console.warn("Claude call failed, falling back to Gemini:", error.message);
+      if (error.message.includes("credit_balance_too_low") || error.message.includes("credit balance")) {
+        const fallbackText = await runGeminiFallback(cleanedMessage, systemInstruction);
+        return `⚠️ **Sistem Notu:** Serhat Bey, *Claude 3.5 Sonnet* süper-beynini tetiklemeye çalıştım fakat Anthropic API hesabınızdaki kredi bakiyesinin yetersiz olduğunu tespit ettim. 💳\n\nİşlerinizin aksamaması için talebinizi **otomatik olarak ücretsiz ana beynimiz olan Gemini 2.5 Flash'a yönlendirdim ve yanıtı derledim:**\n\n---\n\n${fallbackText}`;
+      }
+      return `Claude API işlem hatası: ${error.message}`;
+    }
   }
 
   // Skywork Routing: If user explicitly asks for Skywork or starts with "skywork:", route to Skywork AI

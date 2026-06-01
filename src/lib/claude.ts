@@ -30,6 +30,10 @@ export async function callClaude(prompt: string, systemPrompt?: string): Promise
     return "Claude'dan geçerli bir yanıt alınamadı.";
   } catch (error: any) {
     console.error("Claude API Error:", error);
-    return `Claude API işlem hatası: ${error?.message || error}`;
+    const errString = error?.message || JSON.stringify(error) || "";
+    if (errString.includes("credit balance") || errString.includes("credit_balance_too_low")) {
+      throw new Error("credit_balance_too_low");
+    }
+    throw new Error(`Claude API işlem hatası: ${error?.message || error}`);
   }
 }
