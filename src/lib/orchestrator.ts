@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI, FunctionDeclaration, SchemaType } from "@google/generative-ai";
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim();
 
 // Define function declarations (Tools) for Gemini
 const marketResearchTool: FunctionDeclaration = {
