@@ -1,4 +1,6 @@
 import { GoogleGenerativeAI, FunctionDeclaration, SchemaType } from "@google/generative-ai";
+import { listGmailEmails, sendGmailEmail, uploadToDrive, postToGoogleBusiness } from "./google";
+import { callClaude } from "./claude";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim();
 
@@ -109,11 +111,21 @@ const toolHandlers: Record<string, (args: any) => Promise<any>> = {
       ? `📈 **Londra Zone 1'de Gayrimenkul Yatırımı: Neden 'Leasehold' Değil, 'Freehold' Tercih Etmelisiniz?**\n\nLondra'da ev satın alırken karşınıza çıkacak en kritik kavramlardan biri mülkiyet tipidir. Çoğu emlakçı size 'Leasehold' (uzun vadeli kiralama) satmaya çalışırken, biz Brick & Fortune olarak yatırımcılarımızı **'Freehold' (gerçek toprak mülkiyetli)** yapılara yönlendiriyoruz.\n\nNeden mi?\n\n1️⃣ **Gerçek Sahiplik:** Freehold mülklerde toprağın ve binanın tamamı yasal olarak size aittir. Süre sınırı veya kira ödeme (ground rent) yükümlülüğünüz yoktur.\n2️⃣ **Maddi Değer Koruma:** Leasehold mülklerde süre azaldıkça mülkün değeri düşerken, Freehold mülkler nesiller boyu değerini katlayarak korur.\n3️⃣ **Karar Özgürlüğü:** Yenileme, tadilat veya yönetim kararlarında hiçbir third-party kuruma bağlı kalmazsınız.\n\nTürk yatırımcılarımıza Londra'nın en seçkin Zone 1 bölgelerinde (Mayfair, Knightsbridge, Chelsea) kamuya açık olmayan (off-market) 'Freehold' fırsatları sunuyoruz. Yalnızca alıcıyı temsil ettiğimiz Buying Agent modelimizi keşfetmek için iletişime geçebilirsiniz. 🤝${hashtags}`
       : `🏡 **Londra Zone 1'de Ev Alırken 'Emlakçı' Tuzağına Düşmeyin!**\n\nİngiltere'de standart emlakçılar (Estate Agent) kanunen yalnızca satıcıyı temsil eder ve onun çıkarına çalışır. \n\nSizin haklarınızı kim koruyor? \n\n✨ **Brick & Fortune** olarak biz **Buying Agent (Alıcı Temsilcisi)** rolündeyiz: \n✔️ Sadece sizin (alıcı) çıkarlarınızı koruruz.\n✔️ Kamuya açık olmayan (off-market) en iyi mülkleri buluruz.\n✔️ Satıcıdan komisyon almaz, tamamen sizin yanınızda yer alırız.\n\nLondra'da güvenli ve gizlilik odaklı yatırımın adresi: **investinlondon.com.tr** 🇬🇧${hashtags}`;
 
+    // Auto-Post to Google Business Profile for London local SEO
+    let gbpMessage = "Google Business Profile entegrasyonu simüle edildi.";
+    try {
+      const gbpResult = await postToGoogleBusiness(topic, content);
+      gbpMessage = gbpResult.message;
+    } catch (err: any) {
+      console.warn("GBP Post failed:", err.message);
+    }
+
     return {
       status: "success",
       platform,
       tone,
-      generatedContent: content
+      generatedContent: content,
+      googleBusinessStatus: gbpMessage
     };
   },
 
@@ -121,14 +133,14 @@ const toolHandlers: Record<string, (args: any) => Promise<any>> = {
     console.log(`[Tool Call] manageEmailsAndCalendar: ${action}`);
     
     if (action === "list_emails") {
-      return {
-        status: "success",
-        emails: [
-          { from: "Yatırımcı (Yeniköy / İstanbul)", subject: "Knightsbridge off-market townhouse bütçe detayları", date: "Bugün, 10:30", summary: "Knightsbridge bölgesindeki £5M - £8M bütçeli off-market freehold townhouse seçeneklerini incelemek ve detaylı RICS raporlarını istemek üzere mail attı." },
-          { from: "Sarah Jenkins (Savills Prime London)", subject: "Exclusive Off-Market Residential Building — Belgravia", date: "Dün, 17:15", summary: "Belgravia bölgesinde kamuya açık olmayan, RICS değerlemesi yapılmış komple bir bina fırsatının detaylarını sadece Brick & Fortune ağına özel olarak iletti." }
-        ]
-      };
+      try {
+        const emails = await listGmailEmails();
+        return { status: "success", emails };
+      } catch (error: any) {
+        return { status: "error", message: `Gmail listeleme hatası: ${error.message}` };
+      }
     } else if (action === "list_calendar") {
+      // Return beautiful mock calendar events (configured locally)
       return {
         status: "success",
         events: [
@@ -136,6 +148,26 @@ const toolHandlers: Record<string, (args: any) => Promise<any>> = {
           { title: "Savills Prime Acquisition Team Zoom Call", time: "Çarşamba, 11:00 - 12:00", location: "Zoom (London / Istanbul)" }
         ]
       };
+    } else if (action === "send_email") {
+      try {
+        // Parse email recipient and body from details
+        // Details structure expected: "To: recipient@email.com | Subject: subject_text | Body: html_body"
+        let to = "info@investinlondon.com.tr";
+        let subject = "Brick & Fortune Asistan Bildirimi";
+        let body = details;
+
+        if (details.includes("|")) {
+          const parts = details.split("|");
+          to = parts[0].replace(/to:/i, "").trim();
+          subject = parts[1].replace(/subject:/i, "").trim();
+          body = parts[2].replace(/body:/i, "").trim();
+        }
+
+        const res = await sendGmailEmail(to, subject, body);
+        return res;
+      } catch (error: any) {
+        return { status: "error", message: `E-posta gönderim hatası: ${error.message}` };
+      }
     } else if (action === "schedule_event") {
       return {
         status: "success",
@@ -183,7 +215,7 @@ Hedef Kitle: ${audience} (Türk HNWI Yatırımcılar)
 
 ## 3. Yatırım Kriterleri: Leasehold vs. Freehold
 - Leasehold'un riskleri ve ek maliyetleri (Ground Rent, Service Charge).
-- Neden yatırımcılarımızı toprağıyla gerçek mülkiyet sunan **Freehold** yapılara yönlendiriyoruz?
+- Neden yatırımcılarimizi toprağıyla gerçek mülkiyet sunan **Freehold** yapılara yönlendiriyoruz?
 - Bölgesel net getiri (yield) ve amortisman analizleri.
 
 ---
@@ -194,11 +226,25 @@ Hedef Kitle: ${audience} (Türk HNWI Yatırımcılar)
 - Gizlilik taahhüdü (NDA) çerçevesinde off-market mülklere özel erişim.
 `;
 
+    // Automatically backup the generated presentation slides into Google Drive!
+    let driveMessage = "Google Drive yedekleme aktif değil.";
+    try {
+      const driveUpload = await uploadToDrive(
+        `Marp_Sunum_${topic.replace(/\s+/g, "_")}.md`,
+        slides,
+        "text/markdown"
+      );
+      driveMessage = `Google Drive'a başarıyla yedeklendi: ${driveUpload.webViewLink}`;
+    } catch (err: any) {
+      console.warn("Drive upload failed:", err.message);
+    }
+
     return {
       status: "success",
       topic,
       slideCount: count,
       marpMarkdown: slides,
+      googleDriveStatus: driveMessage,
       instructions: "Yukarıdaki metni kopyalayıp bir `.md` dosyasına yapıştırarak VS Code Marp eklentisiyle anında şık sunumlara dönüştürebilirsiniz."
     };
   },
@@ -224,6 +270,22 @@ Hedef Kitle: ${audience} (Türk HNWI Yatırımcılar)
 export async function runOrchestrator(userId: number, userMessage: string): Promise<string> {
   if (!GEMINI_API_KEY) {
     return "Hata: `GEMINI_API_KEY` ortam değişkeni tanımlanmamış. Lütfen kurulum rehberini kontrol edin.";
+  }
+
+  // Dual-Model Routing: If user explicitly asks for Claude or starts with "claude:", route to Anthropic
+  const isClaudeRequested = 
+    userMessage.toLowerCase().startsWith("claude:") || 
+    userMessage.toLowerCase().includes("claude'a sor") || 
+    userMessage.toLowerCase().includes("claude ile");
+
+  if (isClaudeRequested) {
+    console.log(`[Model Routing] Routing request to Claude 3.5 Sonnet: ${userMessage}`);
+    const cleanedMessage = userMessage.replace(/^claude:/i, "").trim();
+    const systemInstruction = `Sen Brick & Fortune firmasının kurucusu Serhat Saatcı Bey'in tüm işlerini koordine eden, Londra Zone 1 prime gayrimenkul ve Knightsbridge emlak piyasasına, Buying Agent (Alıcı Temsilcisi) iş modeline, off-market freehold mülklere tamamen hakim, son derece profesyonel, kibar ve çözüm odaklı Kişisel Yapay Zeka Asistanısın (Brick & Fortune Claude 3.5 Sonnet Orchestrator).
+Konuşmalarında ve raporlarında daima bu elit, kurumsal ve güven veren 'Brick & Fortune' tonunu yansıtmalısın.
+Daima samimi, son derece saygılı ve profesyonel bir iş dili kullan.`;
+    
+    return await callClaude(cleanedMessage, systemInstruction);
   }
 
   try {
