@@ -50,29 +50,38 @@ export async function GET(req: NextRequest) {
     const access_token = tokenData.access_token;
 
     // 2. Fetch the user's Person URN using OpenID UserInfo
-    const userinfoUrl = "https://api.linkedin.com/v2/userinfo";
-    const userinfoRes = await fetch(userinfoUrl, {
-      headers: { "Authorization": `Bearer ${access_token}` }
-    });
-
     let personUrn = "";
     let name = "LinkedIn Kullanıcısı";
+    let scopeWarning = false;
 
-    if (userinfoRes.ok) {
-      const userinfo = await userinfoRes.json();
-      personUrn = `urn:li:person:${userinfo.sub}`;
-      name = `${userinfo.given_name || ""} ${userinfo.family_name || ""}`.trim() || "Değerli Müşterimiz";
-    } else {
-      // Fallback to legacy me endpoint
-      const meUrl = "https://api.linkedin.com/v2/me";
-      const meRes = await fetch(meUrl, {
+    try {
+      const userinfoUrl = "https://api.linkedin.com/v2/userinfo";
+      const userinfoRes = await fetch(userinfoUrl, {
         headers: { "Authorization": `Bearer ${access_token}` }
       });
-      if (meRes.ok) {
-        const meData = await meRes.json();
-        personUrn = `urn:li:person:${meData.id}`;
-        name = `${meData.localizedFirstName} ${meData.localizedLastName}`;
+
+      if (userinfoRes.ok) {
+        const userinfo = await userinfoRes.json();
+        personUrn = `urn:li:person:${userinfo.sub}`;
+        name = `${userinfo.given_name || ""} ${userinfo.family_name || ""}`.trim() || "Değerli Müşterimiz";
+      } else {
+        // Fallback to legacy me endpoint
+        const meUrl = "https://api.linkedin.com/v2/me";
+        const meRes = await fetch(meUrl, {
+          headers: { "Authorization": `Bearer ${access_token}` }
+        });
+        if (meRes.ok) {
+          const meData = await meRes.json();
+          personUrn = `urn:li:person:${meData.id}`;
+          name = `${meData.localizedFirstName} ${meData.localizedLastName}`;
+        } else {
+          scopeWarning = true;
+          personUrn = "urn:li:person:PROFIL_ID_GIRIN";
+        }
       }
+    } catch (err) {
+      scopeWarning = true;
+      personUrn = "urn:li:person:PROFIL_ID_GIRIN";
     }
 
     // 3. Render premium dark UI with copier cards
@@ -174,6 +183,7 @@ export async function GET(req: NextRequest) {
           <div class="block">
             <label>2. LINKEDIN_PERSON_URN (Kopyalamak için üzerine tıklayın)</label>
             <div class="token-box" onclick="navigator.clipboard.writeText(this.innerText); alert('Kopyalandı!');">${personUrn}</div>
+            ${scopeWarning ? `<p style="font-size: 11px; color: #f59e0b; margin-top: 6px; text-align: left;">⚠️ <strong>Not:</strong> LinkedIn uygulamanızda profil okuma yetkisi kısıtlı olduğundan yasal kimliğiniz otomatik okunamadı. Vercel'e eklerken <code>PROFIL_ID_GIRIN</code> kısmını silerek yerine kendi LinkedIn profil ID'nizi veya kullanıcı adınızı yazabilirsiniz (Örn: <code>urn:li:person:serhatsaatci</code>).</p>` : ""}
           </div>
           
           <div class="info-note">
