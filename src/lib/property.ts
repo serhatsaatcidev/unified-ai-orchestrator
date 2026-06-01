@@ -66,10 +66,10 @@ export async function queryLandRegistry(postcodeQuery: string): Promise<LandRegi
         ?trans lrppi:pricePaid ?amount ;
                lrppi:transactionDate ?date ;
                lrppi:propertyAddress ?addr .
-        ?addr lrcommon:postcode ?postcode .
-        FILTER (strstarts(str(?postcode), "${normalized}"))
+        ?addr lrcommon:town "LONDON" ;
+              lrcommon:postcode ?postcode .
+        FILTER (strstarts(str(?postcode), "${normalized} "))
         OPTIONAL { ?addr lrcommon:street ?street }
-        OPTIONAL { ?addr lrcommon:town ?town }
         OPTIONAL { ?addr lrcommon:paon ?paon }
         OPTIONAL { ?addr lrcommon:saon ?saon }
       } ORDER BY DESC(?date) LIMIT 10

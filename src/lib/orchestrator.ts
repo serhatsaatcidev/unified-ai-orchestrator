@@ -234,7 +234,8 @@ const toolHandlers: Record<string, (args: any) => Promise<any>> = {
       platform,
       tone,
       generatedContent: content,
-      googleBusinessStatus: gbpMessage
+      googleBusinessStatus: gbpMessage,
+      socialPublishStatus: socialPublishMessage
     };
   },
 
