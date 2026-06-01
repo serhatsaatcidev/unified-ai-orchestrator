@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI, FunctionDeclaration, SchemaType } from "@google/generative-ai";
-import { listGmailEmails, sendGmailEmail, uploadToDrive, postToGoogleBusiness } from "./google";
+import { listGmailEmails, sendGmailEmail, uploadToDrive, postToGoogleBusiness, listGoogleCalendarEvents, createGoogleCalendarEvent, listGoogleTasks, createGoogleTask, completeGoogleTask } from "./google";
 import { callClaude } from "./claude";
 import { callSkywork } from "./skywork";
 
@@ -44,7 +44,11 @@ const emailCalendarTool: FunctionDeclaration = {
         type: SchemaType.STRING, 
         description: "The action to perform: 'list_emails' (recent emails), 'list_calendar' (upcoming events), 'send_email' (draft/send), 'schedule_event' (calendar add)." 
       },
-      details: { type: SchemaType.STRING, description: "Context details (e.g., recipient email, meeting title, date/time)." }
+      details: { type: SchemaType.STRING, description: "Context details (e.g., recipient email, meeting title, date/time)." },
+      calendarSummary: { type: SchemaType.STRING, description: "Title/Summary of calendar event." },
+      calendarStart: { type: SchemaType.STRING, description: "Start time of calendar event in ISO 8601 format (e.g., '2026-06-01T14:00:00Z')." },
+      calendarEnd: { type: SchemaType.STRING, description: "End time of calendar event in ISO 8601 format (e.g., '2026-06-01T15:00:00Z')." },
+      calendarLocation: { type: SchemaType.STRING, description: "Location of the event (e.g. 'Knightsbridge Office')." }
     },
     required: ["action"]
   }
@@ -88,6 +92,25 @@ const notebookLMTool: FunctionDeclaration = {
       contentBody: { type: SchemaType.STRING, description: "The detailed, structured text content to prepare for NotebookLM." }
     },
     required: ["topic", "contentBody"]
+  }
+};
+
+const tasksTool: FunctionDeclaration = {
+  name: "manageTasks",
+  description: "Manages the user's todo list and tasks on Google Tasks. Can list tasks, add a new task, or mark a task as completed.",
+  parameters: {
+    type: SchemaType.OBJECT,
+    properties: {
+      action: {
+        type: SchemaType.STRING,
+        description: "The action to perform: 'list_tasks' (lists uncompleted tasks), 'create_task' (adds a new task), 'complete_task' (marks a task as completed)."
+      },
+      title: { type: SchemaType.STRING, description: "The title or main description of the task (required for create_task)." },
+      notes: { type: SchemaType.STRING, description: "Additional details, notes, or subtasks (optional)." },
+      due: { type: SchemaType.STRING, description: "Sensible due date in ISO 8601/relative format (optional)." },
+      taskId: { type: SchemaType.STRING, description: "The unique ID of the task to mark as completed (required for complete_task)." }
+    },
+    required: ["action"]
   }
 };
 
@@ -143,7 +166,8 @@ const toolHandlers: Record<string, (args: any) => Promise<any>> = {
     };
   },
 
-  manageEmailsAndCalendar: async ({ action, details }) => {
+  manageEmailsAndCalendar: async (args: any) => {
+    const { action, details } = args;
     console.log(`[Tool Call] manageEmailsAndCalendar: ${action}`);
     
     if (action === "list_emails") {
@@ -154,14 +178,12 @@ const toolHandlers: Record<string, (args: any) => Promise<any>> = {
         return { status: "error", message: `Gmail listeleme hatası: ${error.message}` };
       }
     } else if (action === "list_calendar") {
-      // Return beautiful mock calendar events (configured locally)
-      return {
-        status: "success",
-        events: [
-          { title: "Knightsbridge Off-Market Görüşmesi (Türk Yatırımcı)", time: "Yarın, 14:00 - 15:00", location: "Rutland Gate Office, Knightsbridge" },
-          { title: "Savills Prime Acquisition Team Zoom Call", time: "Çarşamba, 11:00 - 12:00", location: "Zoom (London / Istanbul)" }
-        ]
-      };
+      try {
+        const events = await listGoogleCalendarEvents();
+        return { status: "success", events };
+      } catch (error: any) {
+        return { status: "error", message: `Takvim listeleme hatası: ${error.message}` };
+      }
     } else if (action === "send_email") {
       try {
         // Parse email recipient and body from details
@@ -170,7 +192,7 @@ const toolHandlers: Record<string, (args: any) => Promise<any>> = {
         let subject = "Brick & Fortune Asistan Bildirimi";
         let body = details;
 
-        if (details.includes("|")) {
+        if (details && details.includes("|")) {
           const parts = details.split("|");
           to = parts[0].replace(/to:/i, "").trim();
           subject = parts[1].replace(/subject:/i, "").trim();
@@ -183,10 +205,35 @@ const toolHandlers: Record<string, (args: any) => Promise<any>> = {
         return { status: "error", message: `E-posta gönderim hatası: ${error.message}` };
       }
     } else if (action === "schedule_event") {
-      return {
-        status: "success",
-        message: `Takviminize (Londra Saat Dilimine göre Knightsbridge ofis ajandasına) başarıyla eklendi: "${details}".`
-      };
+      try {
+        const summary = args.calendarSummary || "Knightsbridge Görüşmesi";
+        let start = args.calendarStart;
+        let end = args.calendarEnd;
+        const location = args.calendarLocation || "Rutland Gate Office, Knightsbridge";
+
+        if (!start) {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          tomorrow.setHours(14, 0, 0, 0);
+          start = tomorrow.toISOString();
+        }
+        if (!end) {
+          const startDate = new Date(start);
+          const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+          end = endDate.toISOString();
+        }
+
+        const res = await createGoogleCalendarEvent(
+          summary, 
+          start, 
+          end, 
+          location, 
+          details || "Brick & Fortune Asistan Planlaması"
+        );
+        return res;
+      } catch (error: any) {
+        return { status: "error", message: `Takvim etkinliği oluşturma hatası: ${error.message}` };
+      }
     }
     
     return { status: "success", message: "E-posta/Takvim işlemi başarıyla tamamlandı." };
@@ -303,6 +350,36 @@ ${contentBody}
       googleDriveStatus: driveMessage,
       instructions: `Belge başarıyla NotebookLM için Google Drive'a kaydedildi. Drive'dan NotebookLM'e tek tıkla ekleyebilirsiniz!`
     };
+  },
+
+  manageTasks: async (args: any) => {
+    const { action } = args;
+    console.log(`[Tool Call] manageTasks: ${action}`);
+
+    try {
+      if (action === "list_tasks") {
+        const tasks = await listGoogleTasks();
+        return { status: "success", tasks };
+      } else if (action === "create_task") {
+        const title = args.title;
+        if (!title) {
+          return { status: "error", message: "Görev oluşturmak için 'title' parametresi zorunludur." };
+        }
+        const res = await createGoogleTask(title, args.notes, args.due);
+        return res;
+      } else if (action === "complete_task") {
+        const taskId = args.taskId;
+        if (!taskId) {
+          return { status: "error", message: "Görevi tamamlamak için 'taskId' parametresi zorunludur." };
+        }
+        const res = await completeGoogleTask(taskId);
+        return res;
+      }
+      return { status: "error", message: `Bilinmeyen görev aksiyonu: ${action}` };
+    } catch (error: any) {
+      console.error("manageTasks error:", error);
+      return { status: "error", message: `Görev işlemi yürütülemedi: ${error.message}` };
+    }
   }
 };
 
@@ -359,7 +436,8 @@ Daima samimi, son derece saygılı ve profesyonel bir iş dili kullan.`;
           emailCalendarTool,
           presentationTool,
           webUpdateTool,
-          notebookLMTool
+          notebookLMTool,
+          tasksTool
         ]
       }],
       systemInstruction: `Sen Brick & Fortune firmasının kurucusu Serhat Saatcı Bey'in tüm işlerini koordine eden, Londra Zone 1 prime gayrimenkul ve Knightsbridge emlak piyasasına, Buying Agent (Alıcı Temsilcisi) iş modeline, off-market freehold mülklere tamamen hakim, son derece profesyonel, kibar ve çözüm odaklı Kişisel Yapay Zeka Asistanısın (Brick & Fortune AI Orchestrator).
@@ -367,7 +445,8 @@ Kullanıcı seninle Telegram üzerinden konuşuyor.
 Sana tanımlanmış özel fonksiyonları (araçları) akıllıca kullanarak Serhat Bey'in taleplerini yerine getirmelisin.
 Yatırımcılar genellikle Türk HNWI (yüksek net değerli) profilleridir. Konuşmalarında ve raporlarında daima bu elit, kurumsal ve güven veren 'Brick & Fortune' tonunu yansıtmalısın.
 Eğer bir aracı çağırırsan, o aracın çıktısını alıp Serhat Bey'e Türkçe dilinde, çok profesyonel, anlaşılır ve emojilerle zenginleştirilmiş güzel bir özet sunmalısın.
-Daima samimi, son derece saygılı ve profesyonel bir iş dili kullan.`
+Daima samimi, son derece saygılı ve profesyonel bir iş dili kullan.
+Bugünün tarihi ve saati: ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/London" })} (Londra Saat Dilimi). Bu bilgiyi takvim etkinlikleri oluştururken tarihleri ISO 8601 formatına dönüştürmek için referans al.`
     });
 
     const chat = model.startChat();

@@ -162,6 +162,179 @@ export async function uploadToDrive(filename: string, fileContent: string, mimeT
 }
 
 // ==========================================
+// 2.5 GOOGLE CALENDAR INTEGRATION HELPERS
+// ==========================================
+
+export async function listGoogleCalendarEvents(maxResults = 5) {
+  const auth = getOAuth2Client();
+  if (!auth) {
+    return [
+      { title: "Knightsbridge Off-Market Görüşmesi (Türk Yatırımcı)", time: "Yarın, 14:00 - 15:00", location: "Rutland Gate Office, Knightsbridge" },
+      { title: "Savills Prime Acquisition Team Zoom Call", time: "Çarşamba, 11:00 - 12:00", location: "Zoom (London / Istanbul)" }
+    ];
+  }
+
+  try {
+    const calendar = google.calendar({ version: "v3", auth });
+    const response = await calendar.events.list({
+      calendarId: "primary",
+      timeMin: new Date().toISOString(),
+      maxResults,
+      singleEvents: true,
+      orderBy: "startTime",
+    });
+
+    const events = response.data.items || [];
+    return events.map(event => {
+      const start = event.start?.dateTime || event.start?.date || "Bilinmiyor";
+      const end = event.end?.dateTime || event.end?.date || "Bilinmiyor";
+      return {
+        title: event.summary || "Konu Yok",
+        time: `${start} - ${end}`,
+        location: event.location || "Belirtilmemiş",
+        description: event.description || ""
+      };
+    });
+  } catch (error: any) {
+    console.error("Google Calendar list error:", error);
+    throw new Error(`Google Calendar etkinlikleri listelenemedi: ${error?.message || error}`);
+  }
+}
+
+export async function createGoogleCalendarEvent(summary: string, startTime: string, endTime: string, location?: string, description?: string) {
+  const auth = getOAuth2Client();
+  if (!auth) {
+    console.log(`[Mock Calendar Event] Title: ${summary}, Time: ${startTime} to ${endTime}`);
+    return { status: "success", message: `Takvim etkinliği (Simüle Modda) başarıyla oluşturuldu: "${summary}".` };
+  }
+
+  try {
+    const calendar = google.calendar({ version: "v3", auth });
+    
+    const response = await calendar.events.insert({
+      calendarId: "primary",
+      requestBody: {
+        summary,
+        location,
+        description,
+        start: {
+          dateTime: startTime,
+          timeZone: "Europe/London"
+        },
+        end: {
+          dateTime: endTime,
+          timeZone: "Europe/London"
+        }
+      }
+    });
+
+    return {
+      status: "success",
+      message: `Takvim etkinliği başarıyla oluşturuldu: "${summary}".`,
+      eventId: response.data.id,
+      htmlLink: response.data.htmlLink
+    };
+  } catch (error: any) {
+    console.error("Google Calendar insert error:", error);
+    throw new Error(`Google Calendar etkinlik oluşturma hatası: ${error?.message || error}`);
+  }
+}
+
+// ==========================================
+// 2.6 GOOGLE TASKS INTEGRATION HELPERS
+// ==========================================
+
+export async function listGoogleTasks(maxResults = 10) {
+  const auth = getOAuth2Client();
+  if (!auth) {
+    return [
+      { id: "mock_task_1", title: "Savills RICS Raporunu gözden geçir", notes: "Zone 1 Mayfair fiyatlarını doğrula", due: "Bugün" },
+      { id: "mock_task_2", title: "Kensington Court off-market tapusunu kontrol et", notes: "Freehold/leasehold durumunu incele", due: "Yarın" }
+    ];
+  }
+
+  try {
+    const tasks = google.tasks({ version: "v1", auth });
+    const response = await tasks.tasks.list({
+      tasklist: "@default",
+      showCompleted: false,
+      maxResults,
+    });
+
+    const items = response.data.items || [];
+    return items.map(item => ({
+      id: item.id,
+      title: item.title || "İsimsiz Görev",
+      notes: item.notes || "",
+      due: item.due ? new Date(item.due).toLocaleDateString("tr-TR") : "Belirtilmemiş"
+    }));
+  } catch (error: any) {
+    console.error("Google Tasks list error:", error);
+    throw new Error(`Google Görevleri listelenemedi: ${error?.message || error}`);
+  }
+}
+
+export async function createGoogleTask(title: string, notes?: string, due?: string) {
+  const auth = getOAuth2Client();
+  if (!auth) {
+    console.log(`[Mock Task Create] Title: ${title}, Notes: ${notes}`);
+    return { status: "success", message: `Görev (Simüle Modda) başarıyla oluşturuldu: "${title}".` };
+  }
+
+  try {
+    const tasks = google.tasks({ version: "v1", auth });
+    
+    // Parse due date if provided
+    const dueFormatted = due ? new Date(due).toISOString() : undefined;
+
+    const response = await tasks.tasks.insert({
+      tasklist: "@default",
+      requestBody: {
+        title,
+        notes,
+        due: dueFormatted
+      }
+    });
+
+    return {
+      status: "success",
+      message: `Görev başarıyla oluşturuldu: "${title}".`,
+      taskId: response.data.id
+    };
+  } catch (error: any) {
+    console.error("Google Tasks insert error:", error);
+    throw new Error(`Google Görev oluşturma hatası: ${error?.message || error}`);
+  }
+}
+
+export async function completeGoogleTask(taskId: string) {
+  const auth = getOAuth2Client();
+  if (!auth) {
+    console.log(`[Mock Task Complete] TaskID: ${taskId}`);
+    return { status: "success", message: `Görev (Simüle Modda) başarıyla tamamlandı olarak işaretlendi.` };
+  }
+
+  try {
+    const tasks = google.tasks({ version: "v1", auth });
+    await tasks.tasks.patch({
+      tasklist: "@default",
+      task: taskId,
+      requestBody: {
+        status: "completed"
+      }
+    });
+
+    return {
+      status: "success",
+      message: `Görev başarıyla tamamlandı olarak işaretlendi.`
+    };
+  } catch (error: any) {
+    console.error("Google Tasks complete error:", error);
+    throw new Error(`Google Görev tamamlama hatası: ${error?.message || error}`);
+  }
+}
+
+// ==========================================
 // 3. GOOGLE BUSINESS PROFILE INTEGRATION HELPERS
 // ==========================================
 
