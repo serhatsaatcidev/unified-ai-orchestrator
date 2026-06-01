@@ -723,7 +723,39 @@ Bugünün tarihi ve saati: ${new Date().toLocaleString("tr-TR", { timeZone: "Eur
     // If no function was called, just return the direct chat response
     return response.text();
   } catch (error: any) {
-    console.error("Orchestrator error:", error);
+    console.error("Orchestrator error caught, starting Triple-Brain Failover Loop:", error);
+    
+    // Check if error is due to Gemini service issue (503, 429, experiencing high demand, fetch, etc.)
+    const errorStr = String(error?.message || error || "");
+    const isGeminiServiceIssue = 
+      errorStr.includes("503") || 
+      errorStr.includes("experiencing high demand") || 
+      errorStr.includes("Service Unavailable") ||
+      errorStr.includes("fetch") ||
+      errorStr.includes("API_KEY");
+
+    if (isGeminiServiceIssue) {
+      console.log("[Failover] Gemini failed. Attempting failover to Claude 3.5 Sonnet...");
+      const systemInstruction = `Sen Brick & Fortune firmasının kurucusu Serhat Saatcı Bey'in tüm işlerini koordine eden, Londra Zone 1 prime gayrimenkul ve Knightsbridge emlak piyasasına, Buying Agent (Alıcı Temsilcisi) iş modeline, off-market freehold mülklere tamamen hakim, son derece profesyonel, kibar ve çözüm odaklı Kişisel Yapay Zeka Asistanısın (Brick & Fortune Claude 3.5 Sonnet Failover).
+Konuşmalarında ve raporlarında daima bu elit, kurumsal ve güven veren 'Brick & Fortune' tonunu yansıtmalısın.
+Daima samimi, son derece saygılı ve profesyonel bir iş dili kullan.`;
+
+      try {
+        const claudeText = await callClaude(userMessage, systemInstruction);
+        return `⚠️ **Sistem Notu:** Serhat Bey, şu anda *Gemini 2.5 Flash* ana yapay zeka beynimizde geçici bir Google API yoğunluğu (503 Hizmet Dışı) yaşanıyor. 🛡️\n\nKesintisiz hizmet kalitemiz gereği **kontrolü anında Claude 3.5 Sonnet'e devrettim ve talebinizi yanıtladım:**\n\n---\n\n${claudeText}`;
+      } catch (claudeErr: any) {
+        console.warn("[Failover] Claude also failed. Attempting failover to Skywork AI...", claudeErr.message);
+        
+        try {
+          const skyworkText = await callSkywork(userMessage, systemInstruction);
+          return `⚠️ **Sistem Notu:** Serhat Bey, şu anda hem *Gemini* hem de *Claude* yapay zeka sunucularında genel bir yoğunluk tespit ettim. 🛡️\n\nKesintisiz hizmet kalitemiz gereği **kontrolü anında 3. Yedek Beynimiz olan Skywork AI'a yönlendirdim ve talebinizi yanıtladım:**\n\n---\n\n${skyworkText}`;
+        } catch (skyworkErr: any) {
+          console.error("[Failover] All AI brains failed:", skyworkErr);
+          return `⚠️ **Sistem Notu:** Serhat Bey, çok üzgünüm. Google, Anthropic ve Skywork yapay zeka sunucularının tamamında geçici bir küresel bağlantı kesintisi yaşanıyor. Lütfen birkaç dakika sonra tekrar deneyin. 🙏\n\n*(Hata Detayı: ${error?.message || error})*`;
+        }
+      }
+    }
+
     return `Mesajınızı işlerken bir hata oluştu: ${error?.message || error}`;
   }
 }
