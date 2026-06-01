@@ -2,6 +2,7 @@ import { GoogleGenerativeAI, FunctionDeclaration, SchemaType } from "@google/gen
 import { listGmailEmails, sendGmailEmail, uploadToDrive, postToGoogleBusiness, listGoogleCalendarEvents, createGoogleCalendarEvent, listGoogleTasks, createGoogleTask, completeGoogleTask } from "./google";
 import { callClaude } from "./claude";
 import { callSkywork } from "./skywork";
+import { queryLandRegistry } from "./property";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim();
 
@@ -119,12 +120,51 @@ const toolHandlers: Record<string, (args: any) => Promise<any>> = {
   performMarketResearch: async ({ location, query, propertyType }) => {
     console.log(`[Tool Call] performMarketResearch in London Zone 1 / ${location}: ${query}`);
     
-    // Simulate UK Zone 1 Prime Off-Market searching for Brick & Fortune
+    // Detect UK postcodes in location or query (e.g. SW1X, W1J, SW7, SW1X 7LJ)
+    const postcodeRegex = /[A-Z]{1,2}[0-9][A-Z0-9]?\s?[0-9]?[A-Z]{0,2}/i;
+    const match = (query || "").match(postcodeRegex) || (location || "").match(postcodeRegex);
+    
+    let realData: any[] = [];
+    let isRealData = false;
+    
+    if (match) {
+      const postcode = match[0];
+      try {
+        const transactions = await queryLandRegistry(postcode);
+        if (transactions && transactions.length > 0) {
+          realData = transactions;
+          isRealData = true;
+        }
+      } catch (err) {
+        console.error("Failed to query Land Registry during research:", err);
+      }
+    }
+
     const loc = location || "Mayfair/Knightsbridge";
     
+    if (isRealData) {
+      return {
+        status: "success",
+        location: loc,
+        isRealData: true,
+        summary: `🇬🇧 *Brick & Fortune — HM Land Registry Real-World Sold Prices (${loc})*`,
+        averagePrice: "Resmi Tapu Dairesi Kayıtlarından Alınmıştır",
+        listingsFound: realData.map(t => ({
+          title: `${t.address}, ${t.town} (${t.postcode})`,
+          price: `£${t.price.toLocaleString("en-GB")}`,
+          size: "Official Registered Transaction",
+          source: `UK HM Land Registry (Satış Tarihi: ${t.date})`
+        })),
+        marketTrend: "Bu veriler Birleşik Krallık Hükümeti resmi Tapu Dairesi (HM Land Registry) veri tabanından canlı olarak çekilmiştir. Zone 1 bölgesindeki gerçek satış değerlerini ve işlem hacmini yansıtmaktadır.",
+        insights: "Resmi satış rakamları, emlakçıların (Estate Agent) şişirilmiş ilk ilan fiyatları ile nihai pazarlık fiyatları arasındaki farkı (pazarlık payı) net olarak görmemizi sağlar. Brick & Fortune olarak alıcı temsilciliği (Buying Agent) modelimizle RICS standartlarında bu gerçek satış verilerini analiz ederek en doğru teklifi veriyoruz."
+      };
+    }
+
+    // Fallback to premium simulated off-market intelligence if no postcode is queryable
     return {
       status: "success",
       location: loc,
+      isRealData: false,
       summary: `🇬🇧 *Brick & Fortune — London Zone 1 (${loc})* Off-Market Değerleme ve Analiz Raporu:`,
       averagePrice: "£2,500,000 - £15,000,000+ (Prime Zone 1 Freehold)",
       listingsFound: [
