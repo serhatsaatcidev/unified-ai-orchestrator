@@ -123,15 +123,31 @@ const crmTool: FunctionDeclaration = {
   parameters: {
     type: SchemaType.OBJECT,
     properties: {
-      action: { type: SchemaType.STRING, description: "The action: 'register_lead' (creates a new lead and runs the automated onboarding)." },
-      name: { type: SchemaType.STRING, description: "The full name of the client/investor (required)." },
-      phone: { type: SchemaType.STRING, description: "Client's phone number (optional/required if available)." },
-      email: { type: SchemaType.STRING, description: "Client's email address (optional/required if available)." },
-      budget: { type: SchemaType.STRING, description: "Investment budget in GBP (e.g. '£5,000,000' or '£3M - £5M') (required)." },
-      region: { type: SchemaType.STRING, description: "London regions or postcodes of interest (e.g. 'Mayfair & Knightsbridge', 'SW1X') (required)." },
-      notes: { type: SchemaType.STRING, description: "Additional details about their requirements or background (optional)." }
+      action: { type: SchemaType.STRING, description: "The action: 'register_lead' (creates a new lead and runs the automated onboarding) or 'list_leads' (reads and lists recently registered VIP investors)." },
+      name: { type: SchemaType.STRING, description: "The full name of the client/investor (required for register_lead)." },
+      phone: { type: SchemaType.STRING, description: "Client's phone number (optional)." },
+      email: { type: SchemaType.STRING, description: "Client's email address (optional)." },
+      budget: { type: SchemaType.STRING, description: "Investment budget in GBP (e.g. '£5,000,000') (required for register_lead)." },
+      region: { type: SchemaType.STRING, description: "London regions or postcodes of interest (required for register_lead)." },
+      notes: { type: SchemaType.STRING, description: "Additional details about their requirements or background (optional)." },
+      limit: { type: SchemaType.INTEGER, description: "Maximum number of leads to return when action is 'list_leads' (optional, defaults to 10)." }
     },
-    required: ["action", "name", "budget", "region"]
+    required: ["action"]
+  }
+};
+
+const microsoftDocumentsTool: FunctionDeclaration = {
+  name: "manageMicrosoftDocuments",
+  description: "Creates and manages corporate Word documents and contracts (like NDA, MOU, or Buying Agency Agreements) in your OneDrive folder. Generates elite custom-branded legal agreements instantly.",
+  parameters: {
+    type: SchemaType.OBJECT,
+    properties: {
+      action: { type: SchemaType.STRING, description: "The action: 'generate_contract' (creates and uploads a custom contract Word document)." },
+      clientName: { type: SchemaType.STRING, description: "Full name of the client/investor (required)." },
+      contractType: { type: SchemaType.STRING, description: "Type of the contract (e.g., 'NDA', 'MOU', 'Buying Agency Agreement') (required)." },
+      details: { type: SchemaType.STRING, description: "Specific terms, budget details, or clauses to include in the contract (required)." }
+    },
+    required: ["action", "clientName", "contractType", "details"]
   }
 };
 
@@ -180,12 +196,16 @@ const toolHandlers: Record<string, (args: any) => Promise<any>> = {
         isRealData: true,
         summary: `🇬🇧 *Brick & Fortune — HM Land Registry Real-World Sold Prices (${loc})*`,
         averagePrice: "Resmi Tapu Dairesi Kayıtlarından Alınmıştır",
-        listingsFound: realData.map(t => ({
-          title: `${t.address}, ${t.town} (${t.postcode})`,
-          price: `£${t.price.toLocaleString("en-GB")}`,
-          size: "Official Registered Transaction",
-          source: `UK HM Land Registry (Satış Tarihi: ${t.date})`
-        })),
+        listingsFound: realData.map(t => {
+          const queryAddr = `${t.address}, ${t.postcode}, ${t.town}`;
+          return {
+            title: `${t.address}, ${t.town} (${t.postcode})`,
+            price: `£${t.price.toLocaleString("en-GB")}`,
+            size: "Official Registered Transaction",
+            source: `UK HM Land Registry (Satış Tarihi: ${t.date})`,
+            googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(queryAddr)}`
+          };
+        }),
         marketTrend: "Bu veriler Birleşik Krallık Hükümeti resmi Tapu Dairesi (HM Land Registry) veri tabanından canlı olarak çekilmiştir. Zone 1 bölgesindeki gerçek satış değerlerini ve işlem hacmini yansıtmaktadır.",
         insights: "Resmi satış rakamları, emlakçıların (Estate Agent) şişirilmiş ilk ilan fiyatları ile nihai pazarlık fiyatları arasındaki farkı (pazarlık payı) net olarak görmemizi sağlar. Brick & Fortune olarak alıcı temsilciliği (Buying Agent) modelimizle RICS standartlarında bu gerçek satış verilerini analiz ederek en doğru teklifi veriyoruz."
       };
@@ -199,9 +219,27 @@ const toolHandlers: Record<string, (args: any) => Promise<any>> = {
       summary: `🇬🇧 *Brick & Fortune — London Zone 1 (${loc})* Off-Market Değerleme ve Analiz Raporu:`,
       averagePrice: "£2,500,000 - £15,000,000+ (Prime Zone 1 Freehold)",
       listingsFound: [
-        { title: "Kensington Court — Stunning Off-Market Freehold Townhouse", price: "£6,450,000", size: "320 m² (3,440 sq ft)", source: "Brick & Fortune Off-Market Private Network" },
-        { title: "Belgravia Mews — Fully Refurbished Freehold House with Garage", price: "£4,850,000", size: "210 m² (2,260 sq ft)", source: "Pre-Market Private Client Relations" },
-        { title: "Knightsbridge — Exclusive Penthouse Apartment near Harrods (Leasehold 990+ Yrs)", price: "£8,900,000", size: "280 m² (3,010 sq ft)", source: "Boutique RICS Valued Portfolio" }
+        { 
+          title: "Kensington Court — Stunning Off-Market Freehold Townhouse", 
+          price: "£6,450,000", 
+          size: "320 m² (3,440 sq ft)", 
+          source: "Brick & Fortune Off-Market Private Network",
+          googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("Kensington Court, London")}`
+        },
+        { 
+          title: "Belgravia Mews — Fully Refurbished Freehold House with Garage", 
+          price: "£4,850,000", 
+          size: "210 m² (2,260 sq ft)", 
+          source: "Pre-Market Private Client Relations",
+          googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("Belgravia Mews, London")}`
+        },
+        { 
+          title: "Knightsbridge — Exclusive Penthouse Apartment near Harrods (Leasehold 990+ Yrs)", 
+          price: "£8,900,000", 
+          size: "280 m² (3,010 sq ft)", 
+          source: "Boutique RICS Valued Portfolio",
+          googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("Knightsbridge Road, London")}`
+        }
       ],
       marketTrend: "Londra Zone 1 prime gayrimenkul pazarı, küresel dalgalanmalara karşı en dirençli 'güvenli liman' olmaya devam ediyor. Türk HNWI (High Net Worth Individual) yatırımcıların enflasyon korumalı İngiliz Sterlini ve özellikle 'Freehold' (toprak mülkiyetli) varlıklara olan talebi son derece yüksek.",
       insights: "Knightsbridge ve Mayfair bölgesinde off-market (kamuya kapalı) ilanlarda alıcı tarafını (Buying Agent) temsil etmenin avantajıyla pazarlık gücümüz ortalama %6-10 seviyesindedir. Satıcı emlakçısının aksine yalnızca alıcı çıkarlarını ve gizliliğini koruyoruz. 💡 *Küçük Bir İpucu:* Birleşik Krallık resmi Tapu Dairesi veri tabanından nokta atışı gerçek satış rakamlarını anında listelemek için lütfen bota **SW1X 7LJ** gibi tam 7 haneli bir posta kodu yazmayı deneyin!"
@@ -475,10 +513,13 @@ ${contentBody}
 
   manageCrmLeads: async (args: any) => {
     const { action, name, phone, email, budget, region, notes } = args;
-    console.log(`[Tool Call] manageCrmLeads: ${action} for ${name}`);
+    console.log(`[Tool Call] manageCrmLeads: ${action}`);
     
-    if (action === "register_lead") {
-      try {
+    try {
+      if (action === "register_lead") {
+        if (!name || !budget || !region) {
+          return { status: "error", message: "Yeni lead kaydetmek için 'name', 'budget' ve 'region' parametreleri zorunludur." };
+        }
         const { registerNewLead } = require("./crm");
         const result = await registerNewLead({
           name,
@@ -489,12 +530,34 @@ ${contentBody}
           notes
         });
         return result;
+      } else if (action === "list_leads") {
+        const { getCRMLeads } = require("./crm");
+        const limit = args.limit || 10;
+        const result = await getCRMLeads(limit);
+        return result;
+      }
+      return { status: "error", message: `Bilinmeyen CRM aksiyonu: ${action}` };
+    } catch (error: any) {
+      console.error("manageCrmLeads error:", error);
+      return { status: "error", message: `CRM işlemi yürütülemedi: ${error.message}` };
+    }
+  },
+
+  manageMicrosoftDocuments: async (args: any) => {
+    const { action, clientName, contractType, details } = args;
+    console.log(`[Tool Call] manageMicrosoftDocuments: ${action} for ${clientName}`);
+    
+    if (action === "generate_contract") {
+      try {
+        const { generateWordContract } = require("./microsoft");
+        const result = await generateWordContract(clientName, contractType, details);
+        return result;
       } catch (error: any) {
-        console.error("register_lead error:", error);
-        return { status: "error", message: `CRM lead kaydı başarısız: ${error.message}` };
+        console.error("generate_contract error:", error);
+        return { status: "error", message: `Sözleşme üretimi başarısız: ${error.message}` };
       }
     }
-    return { status: "error", message: `Bilinmeyen CRM aksiyonu: ${action}` };
+    return { status: "error", message: `Bilinmeyen döküman aksiyonu: ${action}` };
   }
 };
 
@@ -580,7 +643,8 @@ Daima samimi, son derece saygılı ve profesyonel bir iş dili kullan.`;
           webUpdateTool,
           notebookLMTool,
           tasksTool,
-          crmTool
+          crmTool,
+          microsoftDocumentsTool
         ]
       }],
       systemInstruction: `Sen Brick & Fortune firmasının kurucusu Serhat Saatcı Bey'in tüm işlerini koordine eden, Londra Zone 1 prime gayrimenkul ve Knightsbridge emlak piyasasına, Buying Agent (Alıcı Temsilcisi) iş modeline, off-market freehold mülklere tamamen hakim, son derece profesyonel, kibar ve çözüm odaklı Kişisel Yapay Zeka Asistanısın (Brick & Fortune AI Orchestrator).

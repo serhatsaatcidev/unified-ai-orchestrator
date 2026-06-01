@@ -250,3 +250,73 @@ async function getMicrosoftAccessToken(): Promise<string> {
     throw new Error(`Microsoft kimlik doğrulama hatası: ${error?.message || error}`);
   }
 }
+
+/**
+ * Generates custom contract documents based on type (e.g. NDA, MOU, Agency Agreement)
+ * and uploads them securely to OneDrive.
+ */
+export async function generateWordContract(clientName: string, contractType: string, details: string): Promise<{ status: string; message: string; docUrl?: string }> {
+  const dateStr = new Date().toLocaleDateString("tr-TR");
+  const uppercaseType = contractType.toUpperCase();
+
+  const contractContent = `
+========================================================================
+                      BRICK & FORTUNE PROPERTY BUYING AGENCY
+                       ${uppercaseType} — KONTAT BELGESİ
+========================================================================
+Tarih: ${dateStr}
+Belge Tipi: ${contractType}
+Müşteri / Yatırımcı: ${clientName}
+
+LONDRA ZONE 1 BUYING AGENCY & PROPERTY CONSULTANCY
+
+ŞARTLAR VE DETAYLAR:
+${details}
+
+Brick & Fortune Ltd: [Serhat Saatcı, Kurucu]
+Müşteri / Yatırımcı: [${clientName}]
+========================================================================
+  `;
+
+  const fileName = `${clientName.replace(/\s+/g, "_")}_${contractType.replace(/\s+/g, "_")}.docx`;
+
+  if (!isMicrosoftConfigured()) {
+    console.log(`[Mock MS Graph] Generating Contract: ${fileName}`);
+    return {
+      status: "success",
+      message: `Microsoft Word ${contractType} belgesi "${fileName}" (Simüle Modda) başarıyla üretildi ve OneDrive'da 'Brick_Fortune/Contracts' klasörüne kaydedildi.`,
+      docUrl: "https://onedrive.live.com/mock/contract_document_link"
+    };
+  }
+
+  try {
+    const token = await getMicrosoftAccessToken();
+    const url = `https://graph.microsoft.com/v1.0/me/drive/root:/Brick_Fortune/Contracts/${encodeURIComponent(fileName)}:/content`;
+    const fileBuffer = Buffer.from(contractContent, "utf-8");
+
+    const response = await fetch(url, {
+      method: "PUT",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      },
+      body: fileBuffer
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`OneDrive API returned status ${response.status}: ${errText}`);
+    }
+
+    const data = await response.json();
+    return {
+      status: "success",
+      message: `Microsoft Word ${contractType} belgesi başarıyla oluşturuldu ve OneDrive'a yüklendi!`,
+      docUrl: data.webUrl
+    };
+  } catch (error: any) {
+    console.error("Microsoft OneDrive contract error:", error);
+    throw new Error(`OneDrive sözleşme üretme hatası: ${error?.message || error}`);
+  }
+}
+

@@ -1,4 +1,4 @@
-import { appendGoogleSheetRow, createGoogleSpreadsheet, sendGmailEmail } from "./google";
+import { appendGoogleSheetRow, createGoogleSpreadsheet, sendGmailEmail, getGoogleSheetRows } from "./google";
 import { generateWordNDA } from "./microsoft";
 import { sendTelegramMessage } from "./telegram";
 
@@ -173,4 +173,50 @@ export async function registerNewLead(lead: CRMLead): Promise<{
     telegramStatus,
     emailStatus
   };
+}
+
+/**
+ * Retrieves and lists active leads registered in the CRM spreadsheet database.
+ */
+export async function getCRMLeads(limit = 10): Promise<{
+  status: string;
+  message: string;
+  leads?: any[][];
+}> {
+  console.log(`[CRM] Fetching active leads from spreadsheet...`);
+  
+  // Use memory spreadsheet ID if not in env
+  const sheetId = CRM_SPREADSHEET_ID;
+  if (!sheetId) {
+    return {
+      status: "error",
+      message: "Henüz bir CRM e-tablosu oluşturulmamış veya CRM_SPREADSHEET_ID çevre değişkeni tanımlanmamış."
+    };
+  }
+
+  try {
+    const rows = await getGoogleSheetRows(sheetId, "Sheet1!A1:G100");
+    if (!rows || rows.length <= 1) {
+      return {
+        status: "success",
+        message: "CRM veri tabanınızda kayıtlı herhangi bir VIP yatırımcı bulunmamaktadır.",
+        leads: []
+      };
+    }
+
+    const header = rows[0];
+    const dataRows = rows.slice(1).reverse().slice(0, limit); // reverse to show most recent first
+
+    return {
+      status: "success",
+      message: `Son ${dataRows.length} aktif VIP yatırımcı başarıyla çekildi.`,
+      leads: [header, ...dataRows]
+    };
+  } catch (error: any) {
+    console.error("CRM leads fetch error:", error);
+    return {
+      status: "error",
+      message: `CRM listesi çekilemedi: ${error.message}`
+    };
+  }
 }

@@ -447,3 +447,28 @@ export async function createGoogleSpreadsheet(title: string) {
   }
 }
 
+export async function getGoogleSheetRows(spreadsheetId: string, range: string) {
+  const auth = getOAuth2Client();
+  if (!auth) {
+    console.log(`[Mock Google Sheets Get] SpreadsheetID: ${spreadsheetId}, Range: ${range}`);
+    return [
+      ["Tarih", "Yatırımcı Adı", "Telefon", "E-posta", "Bütçe", "Tercih Edilen Bölgeler", "Özel Notlar"],
+      ["01/06/2026 11:55", "Ahmet Yılmaz", "+905321234567", "ahmet@yilmazholding.com", "£4M - £6M", "Mayfair freehold", "Yatırım kararı hızlı, off-market öncelik istiyor."]
+    ];
+  }
+
+  try {
+    const sheets = google.sheets({ version: "v4", auth });
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range,
+    });
+
+    return response.data.values || [];
+  } catch (error: any) {
+    console.error("Google Sheets get error:", error);
+    throw new Error(`Google Sheets veri çekme hatası: ${error?.message || error}`);
+  }
+}
+
+
