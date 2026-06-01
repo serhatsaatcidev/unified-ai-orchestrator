@@ -3,6 +3,7 @@ import { listGmailEmails, sendGmailEmail, uploadToDrive, postToGoogleBusiness, l
 import { callClaude } from "./claude";
 import { callSkywork } from "./skywork";
 import { queryLandRegistry } from "./property";
+import { shareOnLinkedIn, shareOnInstagram } from "./social";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim();
 
@@ -29,7 +30,8 @@ const socialMediaTool: FunctionDeclaration = {
     properties: {
       platform: { type: SchemaType.STRING, description: "The platform: 'linkedin' or 'instagram'." },
       topic: { type: SchemaType.STRING, description: "The core topic or theme of the post (e.g., 'Emlak yatırımı yaparken dikkat edilmesi gerekenler')." },
-      tone: { type: SchemaType.STRING, description: "Tone of the post: 'professional', 'casual', 'energetic', 'educational'." }
+      tone: { type: SchemaType.STRING, description: "Tone of the post: 'professional', 'casual', 'energetic', 'educational'." },
+      publishImmediately: { type: SchemaType.BOOLEAN, description: "Set to true to directly publish to your live social media channel. Otherwise drafts it." }
     },
     required: ["platform", "topic"]
   }
@@ -188,7 +190,8 @@ const toolHandlers: Record<string, (args: any) => Promise<any>> = {
     };
   },
 
-  generateSocialMediaContent: async ({ platform, topic, tone }) => {
+  generateSocialMediaContent: async (args: any) => {
+    const { platform, topic, tone, publishImmediately } = args;
     console.log(`[Tool Call] generateSocialMediaContent for ${platform} on topic: ${topic}`);
     
     const hashtags = platform === "linkedin" 
@@ -206,6 +209,24 @@ const toolHandlers: Record<string, (args: any) => Promise<any>> = {
       gbpMessage = gbpResult.message;
     } catch (err: any) {
       console.warn("GBP Post failed:", err.message);
+    }
+
+    // Direct Live Social Publishing Entegrasyonu
+    let socialPublishMessage = "Doğrudan otomatik paylaşım tetiklenmedi (Taslak olarak kaydedildi).";
+    if (publishImmediately) {
+      try {
+        if (platform === "linkedin") {
+          const res = await shareOnLinkedIn(content);
+          socialPublishMessage = res.message;
+        } else if (platform === "instagram") {
+          // Use a premium default brand cover photo for Brick & Fortune Instagram posts
+          const brandImage = "https://www.investinlondon.com.tr/assets/luxury_kensington_cover.jpg";
+          const res = await shareOnInstagram(brandImage, content);
+          socialPublishMessage = res.message;
+        }
+      } catch (err: any) {
+        socialPublishMessage = `Otomatik paylaşım hatası: ${err.message}`;
+      }
     }
 
     return {
