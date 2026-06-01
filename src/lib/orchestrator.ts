@@ -75,24 +75,27 @@ const webUpdateTool: FunctionDeclaration = {
   }
 };
 
-// Tool implementations (Mocking the dynamic results for our PoC)
+// Tool implementations (Mocking the dynamic results for our PoC with London/UK Context)
 const toolHandlers: Record<string, (args: any) => Promise<any>> = {
   performMarketResearch: async ({ location, query, propertyType }) => {
-    console.log(`[Tool Call] performMarketResearch in ${location}: ${query}`);
+    console.log(`[Tool Call] performMarketResearch in London/${location}: ${query}`);
     
-    // Simulate web searching / scraping and returning rich market data
+    // Simulate UK web searching / scraping and returning rich London market data
+    const loc = location || "London";
+    const isPrime = loc.toLowerCase().includes("kensington") || loc.toLowerCase().includes("chelsea") || loc.toLowerCase().includes("richmond");
+    
     return {
       status: "success",
-      location,
-      summary: `*${location}* bölgesi için yapılan analiz sonuçları:`,
-      averagePricePerSqm: location.toLowerCase().includes("kadıköy") ? "85,000 TL - 120,000 TL" : "45,000 TL - 65,000 TL",
+      location: loc,
+      summary: `🇬🇧 *London - ${loc}* bölgesi için yapılan güncel gayrimenkul analiz sonuçları:`,
+      averagePrice: isPrime ? "£850,000 - £1,500,000" : "£450,000 - £750,000",
       listingsFound: [
-        { title: "Caddebostan Sahile Yakın 3+1", price: "24,500,000 TL", size: "135 m²", source: "sahibinden.com" },
-        { title: "Moda Caddesinde Yatırımlık 2+1", price: "18,200,000 TL", size: "90 m²", source: "hepsiemlak.com" },
-        { title: "Göztepe Parkı Karşısı Lüks 4+1", price: "32,000,000 TL", size: "180 m²", source: "sahibinden.com" }
+        { title: "Stunning 2 Bed Apartment with River Views", price: "£675,000", size: "82 m² (880 sq ft)", source: "rightmove.co.uk" },
+        { title: "Modern 1 Bed Flat near Tube Station", price: "£425,000", size: "55 m² (590 sq ft)", source: "zoopla.co.uk" },
+        { title: "Beautiful 3 Bed Terrace House in Commuter Zone", price: "£895,000", size: "115 m² (1,230 sq ft)", source: "rightmove.co.uk" }
       ],
-      marketTrend: "Son 3 ayda %4.2 artış eğiliminde, talep yüksek seyrediyor. Özellikle sahil şeridinde amortisman süresi 22 yıl civarında.",
-      insights: "Fiyatlar yüksek ancak kiralama potansiyeli çok güçlü. Acil satılık ilanlarda %5-8 oranında pazarlık payı bulunuyor."
+      marketTrend: "Londra genelinde Zone 2 ve Zone 3 banliyö hatlarında kiralama talebi çok güçlü seyrediyor. Ortalama kira getirileri (yield) %4.8 - %5.9 arasında.",
+      insights: "İngiltere'deki güncel mortgage (konut kredisi) faiz oranları dengelenirken, nakit alıcılar ve kurumsal yatırımcılar Rightmove/Zoopla üzerinde aktif kalmaya devam ediyor. Alırken pazarlık payı Zone 3 dışı bölgelerde %3-5 seviyesinde."
     };
   },
 
@@ -100,12 +103,12 @@ const toolHandlers: Record<string, (args: any) => Promise<any>> = {
     console.log(`[Tool Call] generateSocialMediaContent for ${platform} on topic: ${topic}`);
     
     const hashtags = platform === "linkedin" 
-      ? "\n\n#GayrimenkulYatırımı #EmlakTrendleri #YatırımTavsiyesi #FinansalÖzgürlük"
-      : "\n\n#emlak #yatırım #kadıköy #satılıkdaire #gayrimenkul #realestate #luxuryhomes";
+      ? "\n\n#LondonProperty #UKRealEstate #PropertyInvestment #Rightmove #Zoopla #UKFinance"
+      : "\n\n#london #londonrealestate #ukproperty #flatforrent #luxuryhomes #investinlondon";
 
     const content = platform === "linkedin"
-      ? `📈 **Gayrimenkul Yatırımında Altın Kurallar: Doğru Lokasyon Nasıl Seçilir?**\n\nHerkes gayrimenkulün en güvenli liman olduğunu söyler, peki ama yatırımı kazanca dönüştüren asıl sır nedir? Tabii ki doğru lokasyon analizi!\n\nİşte bir bölgeyi incelerken mutlaka bakmanız gereken 3 kritik metrik:\n\n1️⃣ **Ulaşım Yatırımları:** Metro, metrobüs veya yeni açılacak bağlantı yolları bir bölgenin değerini ortalama %25-40 oranında artırır.\n2️⃣ **Amortisman Süresi:** Satın alma bedelinin kira geliriyle kaç yılda geri döneceği (Türkiye ortalaması 18-22 yıl arası mükemmel kabul edilir).\n3️⃣ **Sosyal Altyapı:** Okul, hastane ve park alanlarına yakınlık hem satışı kolaylaştırır hem de elit kiracı profilini çeker.\n\nSiz şu sıralar hangi lokasyonları radarınıza aldınız? Yorumlarda buluşalım! 👇${hashtags}`
-      : `🏡 **Yatırım Yaparken Bu 3 Hatadan Kaçının!**\n\nGayrimenkul alırken duygusal davranmak size pahalıya patlayabilir. İşte dikkat etmeniz gerekenler:\n\n❌ **1. Sadece fiyata bakıp altyapıyı es geçmek:** Ucuz daire her zaman iyi yatırım değildir.\n❌ **2. Amortisman süresini hesaplamamak:** Kendi kendini ödemeyen mülk yük olur.\n❌ **3. Bölge trendlerini incelememek:** Gelişme aksının tersinde kalmayın!\n\n💡 Profesyonel analiz ve doğru portföy yönetimi için bana her zaman DM gönderebilirsiniz! ✨${hashtags}`;
+      ? `📈 **London Property Market: Why Commuter Zones Are Outperforming Prime Central London**\n\nHaving analyzed the UK real estate dynamics for the past few quarters, one trend stands out clearly: Zone 3 and commuter belt properties are outperforming Prime Central London in terms of rental yields and capital growth.\n\nHere are 3 reasons why buy-to-let investors are shifting their capital outside Zone 1:\n\n1️⃣ **The Hybrid Work Effect:** Professionals are willing to travel 30-40 mins if they get a home office and private green space for their money.\n2️⃣ **Rental Yield Resilience:** Outer zones offer 5.5% - 6.2% gross yields, compared to a mere 3% in Kensington or Chelsea.\n3️⃣ **Regeneration Projects:** Areas like Wembley, Croydon, and Stratford continue to benefit from multi-billion pound infrastructure injections.\n\nAre you looking to expand your portfolio in London this year? What zones are on your radar? Let's discuss in the comments! 👇${hashtags}`
+      : `🏡 **Thinking of buying a flat in London? Avoid these 3 mistakes!**\n\nNavigating the UK property market can be tricky. Here is what to watch out for:\n\n❌ **1. Overlooking Service Charges & Ground Rent:** In leasehold flats, these can eat up your yields.\n❌ **2. Ignoring the Council Tax band:** Make sure you calculate the exact monthly holding costs.\n❌ **3. Commute distance vs. Tube line reliability:** Always check the Elizabeth Line or Overground connections!\n\n💡 Drop me a DM for direct listings and custom portfolio analysis in London! ✨${hashtags}`;
 
     return {
       status: "success",
@@ -122,22 +125,22 @@ const toolHandlers: Record<string, (args: any) => Promise<any>> = {
       return {
         status: "success",
         emails: [
-          { from: "Ahmet Yılmaz (Yatırımcı)", subject: "Caddebostan projesi teklifi hakkında", date: "Bugün, 10:30", summary: "Fiyat teklifini revize etmek istiyor, sizinle görüşmek üzere randevu talep ediyor." },
-          { from: "Zeynep Kaya (Emlak Danışmanı)", subject: "Yeni portföy detayları - Moda", date: "Dün, 17:15", summary: "Moda caddesinde acil satılık 2 dairenin fotoğraflarını ve tapu bilgilerini gönderdi." }
+          { from: "James Smith (UK Investor)", subject: "London buy-to-let portfolio proposal", date: "Today, 10:30", summary: "Richmond ve Greenwich bölgelerindeki portföy teklifini revize etmek istiyor, sizinle yüz yüze görüşmek üzere randevu talep ediyor." },
+          { from: "Sarah Jenkins (Dexters Estate Agents)", subject: "New property listings in Richmond", date: "Yesterday, 17:15", summary: "Richmond nehir kenarında acil satılık 2 dairenin Rightmove linklerini ve tapu durum bilgilerini paylaştı." }
         ]
       };
     } else if (action === "list_calendar") {
       return {
         status: "success",
         events: [
-          { title: "Ahmet Yılmaz ile Kahve / Sözleşme Görüşmesi", time: "Yarın, 14:00 - 15:00", location: "Caddebostan Starbucks" },
-          { title: "Haftalık Portföy Güncelleme Toplantısı", time: "02 Haziran Çarşamba, 10:00 - 11:00", location: "Zoom" }
+          { title: "Meeting with James Smith (Investor)", time: "Tomorrow, 14:00 - 15:00", location: "Richmond Riverside Cafe" },
+          { title: "Weekly Portfolio Review with UK Team", time: "Wednesday, 10:00 - 11:00", location: "Zoom / London Office" }
         ]
       };
     } else if (action === "schedule_event") {
       return {
         status: "success",
-        message: `Takviminize başarıyla eklendi: "${details}". Bildirimler aktif edildi.`
+        message: `Takviminize (Londra GMT/BST Saat Dilimine göre) başarıyla eklendi: "${details}".`
       };
     }
     
@@ -159,37 +162,37 @@ color: #f3f4f6
 ---
 
 # ${topic}
-### Potansiyel Yatırım Fırsatları Raporu
-Hazırlayan: AI Kişisel Asistanınız
-Hedef Kitle: ${audience}
+### London Real Estate Investment Opportunities
+Prepared by: Your AI Personal Orchestrator
+Target Audience: ${audience}
 
 ---
 
-## 1. Giriş ve Pazarın Durumu
-- Genel ekonomik göstergeler ve gayrimenkul eğilimi.
-- Son 12 ayda değişen faiz ve talep dengeleri.
-- Neden gayrimenkul hâlâ en güvenli liman?
+## 1. Executive Summary & UK Macro Outlook
+- Current UK inflation, interest rates, and property trends.
+- London's status as a global financial and real estate hub.
+- Why buy-to-let remains resilient despite regulatory shifts.
 
 ---
 
-## 2. Bölgesel Fiyat Analizleri
-- Kadıköy ve Beşiktaş sahil şeritleri amortisman oranları.
-- Gelişmekte olan banliyö bölgelerindeki getiri potansiyelleri.
-- Fiyat/Kazanç (F/K) karşılaştırmalı grafik analizi.
+## 2. Top Performing London Boroughs (Zone 2-4)
+- Richmond upon Thames vs. Greenwich rental yields.
+- Capital appreciation trends in Wembley and Hackney.
+- Commuter belt connectivity (Elizabeth Line impacts).
 
 ---
 
-## 3. Yatırım Kriterleri ve Filtreler
-- Doğru mülk seçiminde 3 altın kural.
-- Altyapı ve kentsel dönüşüm fırsatlarını yakalamak.
-- Hukuki süreçler ve tapu kontrollerinde dikkat edilmesi gerekenler.
+## 3. Financial Analysis & Yield Modeling
+- Average purchase price vs. rental income modeling in GBP.
+- Impact of Service Charges, Ground Rent, and Stamp Duty Land Tax (SDLT).
+- Net yields (target 5.5%+) comparison sheet.
 
 ---
 
-## 4. Sonuç ve Eylem Planı
-- Kısa vadeli nakit akışı mı, uzun vadeli değer artışı mı?
-- Önümüzdeki 30 gün içinde atılması gereken kritik adımlar.
-- Teşekkürler! Soru & Cevap.
+## 4. Investment Execution Roadmap
+- Identifying off-market deals through local agent relationships.
+- Legal conveyancing steps in England & Wales.
+- Next 30 days action plan. Thank you! Q&A.
 `;
 
     return {
@@ -208,7 +211,7 @@ Hedef Kitle: ${audience}
       status: "success",
       page,
       title,
-      deploymentUrl: "https://your-app.vercel.app/blog/yeni-makale",
+      deploymentUrl: "https://unified-ai-orchestrator.vercel.app/blog/london-market-update-2026",
       message: `İçerik başarıyla "${page}" sayfasına taslak olarak eklendi. Vercel webhook tetiklendi ve site yeniden derleniyor.`
     };
   }
