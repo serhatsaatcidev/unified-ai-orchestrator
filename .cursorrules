@@ -1,0 +1,46 @@
+# Brick & Fortune AI Orchestrator — Cursor Rules
+
+This file guides Cursor's AI when coding, refactoring, or adding features to this repository. Always follow these architecture guidelines.
+
+## 1. Project Architecture
+
+This is a modern **Next.js (App Router) + TypeScript** project deployed as **Serverless Functions** on **Vercel**.
+
+*   **Main Entry Point (Telegram Webhook):** [src/app/api/webhook/route.ts](file:///C:/Users/serha/.gemini/antigravity/scratch/unified-ai-orchestrator/src/app/api/webhook/route.ts)
+*   **Webhook Registration Helper:** [src/app/api/register/route.ts](file:///C:/Users/serha/.gemini/antigravity/scratch/unified-ai-orchestrator/src/app/api/register/route.ts)
+*   **Orchestration Logic & Brain:** [src/lib/orchestrator.ts](file:///C:/Users/serha/.gemini/antigravity/scratch/unified-ai-orchestrator/src/lib/orchestrator.ts)
+*   **Dual-Model Routing:** Supports routing requests to **Gemini 2.5 Flash** (default for tool execution) and **Claude 3.5 Sonnet** (when prefixed with `Claude:`).
+*   **Google Services integration:** [src/lib/google.ts](file:///C:/Users/serha/.gemini/antigravity/scratch/unified-ai-orchestrator/src/lib/google.ts) (Gmail, Google Drive, Google Business Profile) via `googleapis`.
+*   **Skywork AI integration:** [src/lib/skywork.ts](file:///C:/Users/serha/.gemini/antigravity/scratch/unified-ai-orchestrator/src/lib/skywork.ts) for Skywork LLM completions.
+
+## 2. Coding Standards & SDK Guidelines
+
+### A. Google Generative AI SDK (v1beta / latest)
+*   Do NOT use `Type` import for schema definitions. Use **`SchemaType`** instead.
+    *   *Correct:* `import { SchemaType } from "@google/generative-ai";`
+*   Do NOT call `response.getFunctionCalls()`. Use **`response.functionCalls()`** as a method call.
+    *   *Correct:* `const functionCalls = response.functionCalls();`
+*   Default model: **`gemini-2.5-flash`** (or `gemini-flash-latest`). Do NOT use `gemini-1.5-flash` as it is deprecated in 2026.
+
+### B. Anthropic Claude SDK
+*   Model: **`claude-3-5-sonnet-20241022`** (active stable Claude 3.5 Sonnet).
+*   Helper file: [src/lib/claude.ts](file:///C:/Users/serha/.gemini/antigravity/scratch/unified-ai-orchestrator/src/lib/claude.ts)
+
+### C. Skywork AI
+*   Uses OpenAI-compatible completions API endpoint.
+*   Helper file: [src/lib/skywork.ts](file:///C:/Users/serha/.gemini/antigravity/scratch/unified-ai-orchestrator/src/lib/skywork.ts)
+
+## 3. Tool Development Guidelines
+
+Every time you implement or modify a tool in `src/lib/orchestrator.ts`:
+1.  Define a clear `FunctionDeclaration` schema at the top of the file using `SchemaType`.
+2.  Add the schema declaration into the model's `tools` array.
+3.  Add the actual implementation inside the `toolHandlers` object.
+4.  Always implement a **graceful mock fallback** if the underlying environment variables (e.g., Google OAuth keys) are not present, so the bot never crashes and remains testable.
+
+## 4. NotebookLM Compatibility Rule
+
+When generating research, market reports, or client portfolios:
+*   Always format outputs using clean, deeply structured, hierarchically organized Markdown.
+*   Utilize **`uploadToDrive`** to automatically save any heavy research, slide outlines, or compiled briefs into Google Drive as `.md` or `.txt` files.
+*   This allows Serhat Bey to immediately sync his Google Drive folder with **Google NotebookLM** in a single click, instantly building rich research databases without manual copying!
