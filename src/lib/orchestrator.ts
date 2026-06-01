@@ -120,15 +120,26 @@ const toolHandlers: Record<string, (args: any) => Promise<any>> = {
   performMarketResearch: async ({ location, query, propertyType }) => {
     console.log(`[Tool Call] performMarketResearch in London Zone 1 / ${location}: ${query}`);
     
-    // Detect UK postcodes in location or query (e.g. SW1X, W1J, SW7, SW1X 7LJ)
-    const postcodeRegex = /[A-Z]{1,2}[0-9][A-Z0-9]?\s?[0-9]?[A-Z]{0,2}/i;
-    const match = (query || "").match(postcodeRegex) || (location || "").match(postcodeRegex);
+    // Detect UK postcodes in location or query
+    // 1. Full postcode pattern (e.g. SW1X 7LJ, SW7 2AZ)
+    const fullPostcodeRegex = /[A-Z]{1,2}[0-9][A-Z0-9]?\s?[0-9][A-Z]{2}/i;
+    // 2. Partial postcode pattern (e.g. SW1X, SW7, W1J)
+    const partialPostcodeRegex = /\b[A-Z]{1,2}[0-9][A-Z0-9]?\b/i;
+    
+    let postcode = "";
+    const fullMatch = (query || "").match(fullPostcodeRegex) || (location || "").match(fullPostcodeRegex);
+    const partialMatch = (query || "").match(partialPostcodeRegex) || (location || "").match(partialPostcodeRegex);
+    
+    if (fullMatch) {
+      postcode = fullMatch[0];
+    } else if (partialMatch) {
+      postcode = partialMatch[0];
+    }
     
     let realData: any[] = [];
     let isRealData = false;
     
-    if (match) {
-      const postcode = match[0];
+    if (postcode) {
       try {
         const transactions = await queryLandRegistry(postcode);
         if (transactions && transactions.length > 0) {
@@ -140,7 +151,7 @@ const toolHandlers: Record<string, (args: any) => Promise<any>> = {
       }
     }
 
-    const loc = location || "Mayfair/Knightsbridge";
+    const loc = location || postcode || "Mayfair/Knightsbridge";
     
     if (isRealData) {
       return {
@@ -173,7 +184,7 @@ const toolHandlers: Record<string, (args: any) => Promise<any>> = {
         { title: "Knightsbridge — Exclusive Penthouse Apartment near Harrods (Leasehold 990+ Yrs)", price: "£8,900,000", size: "280 m² (3,010 sq ft)", source: "Boutique RICS Valued Portfolio" }
       ],
       marketTrend: "Londra Zone 1 prime gayrimenkul pazarı, küresel dalgalanmalara karşı en dirençli 'güvenli liman' olmaya devam ediyor. Türk HNWI (High Net Worth Individual) yatırımcıların enflasyon korumalı İngiliz Sterlini ve özellikle 'Freehold' (toprak mülkiyetli) varlıklara olan talebi son derece yüksek.",
-      insights: "Knightsbridge ve Mayfair bölgesinde off-market (kamuya kapalı) ilanlarda alıcı tarafını (Buying Agent) temsil etmenin avantajıyla pazarlık gücümüz ortalama %6-10 seviyesindedir. Satıcı emlakçısının aksine yalnızca alıcı çıkarlarını ve gizliliğini koruyoruz."
+      insights: "Knightsbridge ve Mayfair bölgesinde off-market (kamuya kapalı) ilanlarda alıcı tarafını (Buying Agent) temsil etmenin avantajıyla pazarlık gücümüz ortalama %6-10 seviyesindedir. Satıcı emlakçısının aksine yalnızca alıcı çıkarlarını ve gizliliğini koruyoruz. 💡 *Küçük Bir İpucu:* Birleşik Krallık resmi Tapu Dairesi veri tabanından nokta atışı gerçek satış rakamlarını anında listelemek için lütfen bota **SW1X 7LJ** gibi tam 7 haneli bir posta kodu yazmayı deneyin!"
     };
   },
 
