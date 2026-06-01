@@ -117,6 +117,24 @@ const tasksTool: FunctionDeclaration = {
   }
 };
 
+const crmTool: FunctionDeclaration = {
+  name: "manageCrmLeads",
+  description: "Registers and manages VIP investor leads in the Brick & Fortune Custom CRM database. Triggers automatic onboarding with a professional HTML email welcoming them, OneDrive Word NDA document backup, and instant admin Telegram alert.",
+  parameters: {
+    type: SchemaType.OBJECT,
+    properties: {
+      action: { type: SchemaType.STRING, description: "The action: 'register_lead' (creates a new lead and runs the automated onboarding)." },
+      name: { type: SchemaType.STRING, description: "The full name of the client/investor (required)." },
+      phone: { type: SchemaType.STRING, description: "Client's phone number (optional/required if available)." },
+      email: { type: SchemaType.STRING, description: "Client's email address (optional/required if available)." },
+      budget: { type: SchemaType.STRING, description: "Investment budget in GBP (e.g. '£5,000,000' or '£3M - £5M') (required)." },
+      region: { type: SchemaType.STRING, description: "London regions or postcodes of interest (e.g. 'Mayfair & Knightsbridge', 'SW1X') (required)." },
+      notes: { type: SchemaType.STRING, description: "Additional details about their requirements or background (optional)." }
+    },
+    required: ["action", "name", "budget", "region"]
+  }
+};
+
 // Tool implementations (Mocking the dynamic results for our PoC with Brick & Fortune London Zone 1 Context)
 const toolHandlers: Record<string, (args: any) => Promise<any>> = {
   performMarketResearch: async ({ location, query, propertyType }) => {
@@ -453,6 +471,30 @@ ${contentBody}
       console.error("manageTasks error:", error);
       return { status: "error", message: `Görev işlemi yürütülemedi: ${error.message}` };
     }
+  },
+
+  manageCrmLeads: async (args: any) => {
+    const { action, name, phone, email, budget, region, notes } = args;
+    console.log(`[Tool Call] manageCrmLeads: ${action} for ${name}`);
+    
+    if (action === "register_lead") {
+      try {
+        const { registerNewLead } = require("./crm");
+        const result = await registerNewLead({
+          name,
+          phone,
+          email,
+          budget,
+          region,
+          notes
+        });
+        return result;
+      } catch (error: any) {
+        console.error("register_lead error:", error);
+        return { status: "error", message: `CRM lead kaydı başarısız: ${error.message}` };
+      }
+    }
+    return { status: "error", message: `Bilinmeyen CRM aksiyonu: ${action}` };
   }
 };
 
@@ -537,7 +579,8 @@ Daima samimi, son derece saygılı ve profesyonel bir iş dili kullan.`;
           presentationTool,
           webUpdateTool,
           notebookLMTool,
-          tasksTool
+          tasksTool,
+          crmTool
         ]
       }],
       systemInstruction: `Sen Brick & Fortune firmasının kurucusu Serhat Saatcı Bey'in tüm işlerini koordine eden, Londra Zone 1 prime gayrimenkul ve Knightsbridge emlak piyasasına, Buying Agent (Alıcı Temsilcisi) iş modeline, off-market freehold mülklere tamamen hakim, son derece profesyonel, kibar ve çözüm odaklı Kişisel Yapay Zeka Asistanısın (Brick & Fortune AI Orchestrator).

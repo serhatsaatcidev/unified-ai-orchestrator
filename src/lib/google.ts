@@ -367,3 +367,83 @@ export async function postToGoogleBusiness(title: string, summary: string, callT
     };
   }
 }
+
+// ==========================================
+// 4. GOOGLE SHEETS INTEGRATION HELPERS
+// ==========================================
+
+export async function appendGoogleSheetRow(spreadsheetId: string, range: string, values: any[]) {
+  const auth = getOAuth2Client();
+  if (!auth) {
+    console.log(`[Mock Google Sheets Append] SpreadsheetID: ${spreadsheetId}, Range: ${range}, Values:`, values);
+    return { status: "success", message: "Veriler Google Sheets tablosuna (Simüle Modda) başarıyla kaydedildi." };
+  }
+
+  try {
+    const sheets = google.sheets({ version: "v4", auth });
+    const response = await sheets.spreadsheets.values.append({
+      spreadsheetId,
+      range,
+      valueInputOption: "RAW",
+      requestBody: {
+        values: [values],
+      },
+    });
+
+    return {
+      status: "success",
+      message: "Veri satırı Google Sheets tablosuna başarıyla kaydedildi.",
+      updatedRange: response.data.updates?.updatedRange || "",
+    };
+  } catch (error: any) {
+    console.error("Google Sheets append error:", error);
+    throw new Error(`Google Sheets veri yazma hatası: ${error?.message || error}`);
+  }
+}
+
+export async function createGoogleSpreadsheet(title: string) {
+  const auth = getOAuth2Client();
+  if (!auth) {
+    console.log(`[Mock Google Sheets Create] Title: ${title}`);
+    return { 
+      status: "success", 
+      spreadsheetId: "mock_spreadsheet_id_123", 
+      webViewLink: "https://docs.google.com/mock/spreadsheet" 
+    };
+  }
+
+  try {
+    const sheets = google.sheets({ version: "v4", auth });
+    const response = await sheets.spreadsheets.create({
+      requestBody: {
+        properties: {
+          title,
+        },
+      },
+    });
+
+    const spreadsheetId = response.data.spreadsheetId!;
+    
+    // Add default headers for Brick & Fortune Custom CRM
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: "Sheet1!A1:G1",
+      valueInputOption: "RAW",
+      requestBody: {
+        values: [
+          ["Tarih", "Yatırımcı Adı", "Telefon", "E-posta", "Bütçe", "Tercih Edilen Bölgeler", "Özel Notlar"]
+        ]
+      }
+    });
+
+    return {
+      status: "success",
+      spreadsheetId,
+      webViewLink: response.data.spreadsheetUrl,
+    };
+  } catch (error: any) {
+    console.error("Google Sheets create error:", error);
+    throw new Error(`Google Sheets oluşturma hatası: ${error?.message || error}`);
+  }
+}
+
