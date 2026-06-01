@@ -61,7 +61,8 @@ export async function POST(req: NextRequest) {
       const responseText = await runOrchestrator(userId, text);
 
       // 2. Send the reply back to WhatsApp
-      await sendWhatsAppMessage(from, responseText);
+      const { sendWhatsAppTextMessage } = require("@/lib/whatsapp");
+      await sendWhatsAppTextMessage(from, responseText);
     }
 
     // Always return 200 OK to Meta to acknowledge receipt and prevent retry loops
@@ -72,45 +73,3 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/**
- * Sends a message back to the user via Meta WhatsApp Business Cloud API
- */
-async function sendWhatsAppMessage(to: string, text: string) {
-  if (!WHATSAPP_TOKEN || !WHATSAPP_PHONE_NUMBER_ID) {
-    console.log(`[Mock WhatsApp Send] Sending to: ${to} | Text: "${text}"`);
-    return;
-  }
-
-  const url = `https://graph.facebook.com/v19.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`;
-
-  try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${WHATSAPP_TOKEN}`
-      },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        recipient_type: "individual",
-        to: to,
-        type: "text",
-        text: {
-          preview_url: true,
-          body: text
-        }
-      })
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Meta API returned status ${response.status}: ${errText}`);
-    }
-
-    const data = await response.json();
-    console.log(`[WhatsApp API] Successfully sent message. Message ID: ${data.messages?.[0]?.id}`);
-  } catch (error: any) {
-    console.error("[WhatsApp API] Failed to send message:", error);
-    throw error;
-  }
-}

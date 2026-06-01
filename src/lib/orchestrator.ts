@@ -151,6 +151,20 @@ const microsoftDocumentsTool: FunctionDeclaration = {
   }
 };
 
+const whatsappMessagingTool: FunctionDeclaration = {
+  name: "manageWhatsAppMessaging",
+  description: "Sends customized direct WhatsApp messages, follow-up property briefs, RICS valuations, or PDF brochures directly to a client's phone number.",
+  parameters: {
+    type: SchemaType.OBJECT,
+    properties: {
+      action: { type: SchemaType.STRING, description: "The action: 'send_message' (sends a direct WhatsApp text message to the specified number)." },
+      to: { type: SchemaType.STRING, description: "The recipient's phone number with country code (e.g., '+905321234567' or '447123456789') (required)." },
+      text: { type: SchemaType.STRING, description: "The text content of the message to send (required)." }
+    },
+    required: ["action", "to", "text"]
+  }
+};
+
 // Tool implementations (Mocking the dynamic results for our PoC with Brick & Fortune London Zone 1 Context)
 const toolHandlers: Record<string, (args: any) => Promise<any>> = {
   performMarketResearch: async ({ location, query, propertyType }) => {
@@ -558,6 +572,23 @@ ${contentBody}
       }
     }
     return { status: "error", message: `Bilinmeyen döküman aksiyonu: ${action}` };
+  },
+
+  manageWhatsAppMessaging: async (args: any) => {
+    const { action, to, text } = args;
+    console.log(`[Tool Call] manageWhatsAppMessaging: ${action} to ${to}`);
+    
+    if (action === "send_message") {
+      try {
+        const { sendWhatsAppTextMessage } = require("./whatsapp");
+        const result = await sendWhatsAppTextMessage(to, text);
+        return result;
+      } catch (error: any) {
+        console.error("send_message error:", error);
+        return { status: "error", message: `WhatsApp mesaj gönderimi başarısız: ${error.message}` };
+      }
+    }
+    return { status: "error", message: `Bilinmeyen WhatsApp aksiyonu: ${action}` };
   }
 };
 
@@ -644,7 +675,8 @@ Daima samimi, son derece saygılı ve profesyonel bir iş dili kullan.`;
           notebookLMTool,
           tasksTool,
           crmTool,
-          microsoftDocumentsTool
+          microsoftDocumentsTool,
+          whatsappMessagingTool
         ]
       }],
       systemInstruction: `Sen Brick & Fortune firmasının kurucusu Serhat Saatcı Bey'in tüm işlerini koordine eden, Londra Zone 1 prime gayrimenkul ve Knightsbridge emlak piyasasına, Buying Agent (Alıcı Temsilcisi) iş modeline, off-market freehold mülklere tamamen hakim, son derece profesyonel, kibar ve çözüm odaklı Kişisel Yapay Zeka Asistanısın (Brick & Fortune AI Orchestrator).

@@ -31,6 +31,7 @@ export async function registerNewLead(lead: CRMLead): Promise<{
   ndaUrl?: string; 
   telegramStatus?: string;
   emailStatus?: string;
+  whatsappStatus?: string;
 }> {
   console.log(`[CRM] Registering new VIP Lead: ${lead.name} (${lead.email})`);
   
@@ -137,6 +138,32 @@ export async function registerNewLead(lead: CRMLead): Promise<{
     }
   }
 
+  // Step 3.5: WhatsApp onboarding welcome message and catalog PDF link
+  let whatsappStatus = "Telefon numarası belirtilmemiş.";
+  if (lead.phone) {
+    try {
+      const { sendWhatsAppTextMessage } = require("./whatsapp");
+      const whatsappMsg = `Merhaba ${lead.name} Bey,
+
+Brick & Fortune Gayrimenkul Yatırım Danışmanlığı'na gösterdiğiniz ilgi için teşekkür ederiz. 🤝
+
+Londra Zone 1 (Knightsbridge, Mayfair, Chelsea, Belgravia) bölgelerindeki en güncel kamuya kapalı (off-market) portföyümüzün yer aldığı elit kataloğumuz başarıyla hazırlanmıştır.
+
+📖 Off-Market Gayrimenkul Kataloğu PDF Bağlantınız:
+https://www.investinlondon.com.tr/catalog/off_market_portfolio.pdf
+
+Kurucumuz Serhat Saatcı sizin için RICS standartlarında özel bir analiz hazırlamaktadır. En kısa sürede sizinle irtibata geçeceğiz.
+
+Saygılarımızla,
+Brick & Fortune Buying Agency 🇬🇧`;
+      
+      const whatsappRes = await sendWhatsAppTextMessage(lead.phone, whatsappMsg);
+      whatsappStatus = whatsappRes.message;
+    } catch (err: any) {
+      whatsappStatus = `WhatsApp gönderilemedi: ${err.message}`;
+    }
+  }
+
   // Step 4: Live Telegram admin alert to Serhat Bey
   let telegramStatus = "Chat ID is not configured";
   if (MY_TELEGRAM_CHAT_ID) {
@@ -154,6 +181,7 @@ export async function registerNewLead(lead: CRMLead): Promise<{
 1. Google Sheets CRM tablosuna yeni satır olarak yazıldı. ✅
 2. Microsoft Word NDA belgesi otomatik üretildi ve OneDrive'a kaydedildi. ✅
 3. Müşteriye Gmail üzerinden **Off-Market Kataloğu** gönderildi. ✅
+4. Müşteriye WhatsApp üzerinden katalog bağlantısı iletildi. [${whatsappStatus.includes("başarıyla") ? "Evet" : "Simüle"}] ✅
 
 *Serhat Asistan CRM Modülü tarafından otomatik olarak tetiklenmiştir.*`;
       
@@ -171,7 +199,8 @@ export async function registerNewLead(lead: CRMLead): Promise<{
     spreadsheetId: sheetId,
     ndaUrl,
     telegramStatus,
-    emailStatus
+    emailStatus,
+    whatsappStatus
   };
 }
 
